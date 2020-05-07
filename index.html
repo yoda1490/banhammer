@@ -1,0 +1,36 @@
+<html>
+<head>
+<title>Ban Hammer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="css/styles.css" rel="stylesheet" type="text/css" /><script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><meta name="viewport" content="initial-scale=1.0, user-scalable=no" /><script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE&sensor=false"></script>
+<script src="countrycodes.js" type="text/javascript"></script>
+<script src="maps.js" type="text/javascript"></script>
+</head>
+<body>
+
+<h2>Ban hammer</h2>
+<div id="map_canvas"></div>
+<div id="bottom_menu">
+<div class="stat" id="statstat">
+<strong><strong>Stats:
+</strong></strong>
+<ul>
+    <li><strong>IPs blocked:</strong><span id="ipsblocked"></span></li>
+    <li><strong>Countries blocked:</strong><span id="countriesclocked"></span></li>
+</ul>
+</div>
+<div class="stat" id="statproto">
+<strong>Protocols: </strong>
+<ol id="protocols"></ol>
+</div>
+<div class="stat">
+<strong>Latest 5 Blocked Countries: </strong>
+<ol id="last5"></ol>
+</div>
+<div class="stat">
+<strong>Top 5 Blocked Countries: </strong>
+<ol id="top5"></ol>
+</div>
+</div>
+<pre>
