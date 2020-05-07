@@ -1,4 +1,5 @@
 # banhammer
+![Screenshot](https://github.com/rjkreider/banhammer/screenshot.png "Screenshot")
 
 Based on http://www.byteme.org.uk/2014/04/21/ban-hammer-fail2ban-geo-ip-on-google-maps/
 
