@@ -1,47 +1,67 @@
 #!/usr/bin/php
 <?PHP
-//predifined fetch constants
-define('MYSQL_BOTH',MYSQLI_BOTH);
-define('MYSQL_NUM',MYSQLI_NUM);
-define('MYSQL_ASSOC',MYSQLI_ASSOC);
+
 
 // Change the next two lines to suit
-$home = "/usr/local/fail2sql"; // path to fail2sql directory
-$link = mysqli_connect('127.0.0.1', 'fail2ban', 'fail2ban') // host, username, password
+$home = __DIR__; // path to fail2sql directory
+
+require($home."/../dbinfo.php");
+$link = mysqli_connect('127.0.0.1', 'fail2ban', 'glyKS66tNxPPxQFO', 'fail2ban') // host, username, password
   or die('Could not connect: ' . mysqli_error());
 mysqli_select_db($link,'fail2ban') or die('Could not select database');
 
-$name = $_SERVER["argv"][1];
+$geoCityFile=$home."/GeoLiteCity.dat";
 
-if ($name == "-l") {
-  $query = "SELECT * FROM `fail2ban` ORDER BY count DESC LIMIT 50";
+$action = $_SERVER["argv"][1];
+
+if ($action == "-l") {
+  $query = "SELECT *, COUNT(IP) FROM `fail2ban` GROUP BY IP limit 200";
   $result = mysqli_query($link,$query) or die('Query failed: ' . mysqli_error($link));
   while ($row = mysqli_fetch_array($result, MYSQL_NUM)) {
     echo $row[1]."(".$row[3]."/".$row[2]."): ".$row[4]." | Count: ".$row[5]." | Geo: ".$row[9]."\n";
   }
   mysqli_close($link);
   exit;
-}else if ($name == "-c") {
+}else if ($action == "-f") {
   $query = "DELETE FROM `fail2ban`";
   $result = mysqli_query($link,$query) or die('Query failed: ' . mysqli_error($link));
   echo "Resetting database\n";
   exit;
-}else if ($name == "-u") {
-  exec("wget -O - https://dl.miyuru.lk/geoip/maxmind/city/maxmind4.dat.gz |zcat - > ".$home."/GeoLiteCity.dat");
+}else if ($action == "-u") {
+  if(!file_exists($geoCityFile) || time()-filemtime($geoCityFile) >= 60 * 60 * 24 ){
+  	exec("wget -O - \"https://dl.miyuru.lk/geoip/maxmind/city/maxmind4.dat.gz\" |zcat - > $geoCityFile");
+  }else{
+        echo "File is too recent, not updating it. Remove ".$geoCityFile." if you want to force refresh\n";
+  } 
   exit;
-}else if ($name == "-h") {
+}else if ($action == "-h") {
   print_help();
 }
 
-$protocol = $_SERVER["argv"][2];
-$port = $_SERVER["argv"][3];
-if (!preg_match('/^\d{1,5}$/', $port)) {
-  $port = getservbyname($_SERVER["argv"][3], $protocol);
+$name = addslashes(trim($_SERVER["argv"][2]));
+$protocol = addslashes(trim($_SERVER["argv"][3]));
+$ports = addslashes(trim($_SERVER["argv"][4]));
+
+#not working anymore to due multiple ports ban => ports is now varchar
+#if (!preg_match('/^\d{1,5}$/', $ports)) {
+#  $ports = getservbyname($_SERVER["argv"][4], $protocol);
+#}
+
+$ip = addslashes(trim($_SERVER["argv"][5]));
+
+if (!$name || !$ip) {
+  print_help();
 }
 
-$ip = $_SERVER["argv"][4];
+if ($action == "-d") {
+  $query = "UPDATE `fail2ban` set `ban`=0 where `ip`='".$ip."' and `name`='".$name."'";
+  $result = mysqli_query($link,$query) or die('Query failed: ' . mysqli_error($link));
+  echo "Unban $name $ip \n";
+  exit;
+}
 
-if (!$name || !$protocol || !$port || !$ip) {
+
+if (!$protocol || !$ports) {
   print_help();
 }
 
@@ -49,44 +69,35 @@ if (!$name || !$protocol || !$port || !$ip) {
 include($home."/geoipcity.inc");
 include($home."/geoipregionvars.php");
 
-$query = "SELECT id FROM `fail2ban` WHERE name = '".$name."' AND protocol = '".$protocol."' AND port = '".$port."' AND ip = '".$ip."'";
 
-$result = mysqli_query($link,$query) or die('Query failed: ' . mysqli_error($link));
-
-$num = mysqli_num_rows($result);
-
-if ($num == "0") {
-  $geodb = geoip_open($home."/GeoLiteCity.dat",GEOIP_STANDARD) or die ('Failed to open Geo Database');
-  $geoip = geoip_record_by_addr($geodb,$ip);
-  if ($geoip) {
-    $query = "INSERT INTO `fail2ban` values ('', '".$name."', '".$protocol."', '".$port."', '".$ip."', '1', '".$geoip->longitude."', '".$geoip->latitude."', '".$geoip->country_code."', '".$geoip->city.", ".$geoip->country_name."', NOW())";
-    echo "Inserting $ip into database with geo info\n$query";
-  }else {
-    $query = "INSERT INTO `fail2ban` values ('', '".$name."', '".$protocol."', '".$port."', '".$ip."', '1', '', '', '', '', NOW())";
-    echo "Inserting $ip into database without geo info\n";
-  }
+$geodb = geoip_open($geoCityFile,GEOIP_STANDARD) or die ('Failed to open Geo Database');
+$geoip = geoip_record_by_addr($geodb,$ip);
+if ($geoip) {
+  $query = "INSERT INTO `fail2ban` values (NULL, '".$name."', '".$protocol."', '".$ports."', '".$ip."', '".$geoip->longitude."', '".$geoip->latitude."', '".$geoip->country_code."', '".$geoip->country_code3."', '".$geoip->city."', '".$geoip->country_name."', NOW(), 1)";
+  echo "Inserting $ip into database with geo info\n$query";
 }else {
-  $row = mysqli_fetch_row($result);
-  $query = "UPDATE `fail2ban` set count=count+1 where id = '".$row[0]."'";
-  echo "Incrementing count for $ip (".$row[0].")\n";
+  $query = "INSERT INTO `fail2ban` values ('', '".$name."', '".$protocol."', '".$ports."', '".$ip."', '', '', '', '', '', '', NOW(), 1)";
+  echo "Inserting $ip into database without geo info\n";
 }
 
 $result = mysqli_query($link,$query) or die('Query failed: ' . mysqli_error($link));
-
+echo "";
 mysqli_close($link);
 
 function print_help() {
-  echo "Fail2SQL v1.0 by Jordan Tomkinson <jordan@moodle.com>\n";
+  echo "Fail2SQL v1.0 by Jordan Tomkinson <jordan@moodle.com> Updated by Amaury BOLLER <a#boller.co>\n";
   echo "Usage: ".$_SERVER["argv"][0]." [-h|-l|-c|-u]\n";
   echo "\t -h: This page\n";
   echo "\t -l: List entries in the database (max 50 showed)\n";
-  echo "\t -c: Clear the database and start fresh\n";
+  echo "\t -f: Flush the database and start fresh\n";
   echo "\t -u: Update GeoIP database\n\n";
+  echo "\t -b  <name> <protocol> <ports> <ip> : to ban an IP";
+  echo "\t -d <name> <ip>: to flag ip as unban";
   echo "To call this script from Fail2Ban append the following line to 'actionban =' and restart fail2ban\n";
-  echo "/path/to/fail2sql <name> <protocol> <port> <ip>\n";
+  echo "/path/to/fail2sql -b <name> <protocol> <port> <ip>\n";
   echo "Example for /etc/fail2ban/action.d/iptables.conf\n";
   echo "actionban = iptables -I fail2ban-<name> 1 -s <ip> -j DROP\n";
-  echo "            /usr/local/fail2sql/fail2sql <name> <protocol> <port> <ip>\n";
+  echo "            /usr/local/fail2sql/fail2sql -b <name> <protocol> <port> <ip>\n";
   exit;
 }
 

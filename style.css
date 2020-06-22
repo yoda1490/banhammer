@@ -1,0 +1,39 @@
+html { }
+body {
+}
+
+#index{
+	width: 100%;
+	height: 100%;
+}
+
+#container{
+	width: 100%;
+	height: 100%;
+	#background-color: #aad3df;
+}
+
+
+.flex_col{
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+#map { 
+    width: 100%;
+    height: 100%;
+}
+
+
+#stats_menu { 
+    flex: 0 0 auto;
+    z-index: 10;
+}
+
+
+#stats_menu .stat { width: 300px; margin: 0 1%; display: block; float: left;}
+#stats_menu #statproto { width: 200px;}
+#stats_menu #statstat { width: 200px;}
+
+

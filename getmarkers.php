@@ -8,17 +8,12 @@ require("dbinfo.php");
  
 // Opens a connection to a MySQL server
  
-$connection=mysqli_connect ($db_host, $db_user, $db_pwd);
+$connection=mysqli_connect ($db_host, $db_user, $db_pwd, $database);
 if (!$connection) {  die('Not connected : ' . mysqli_error($connection));}
  
-// Set the active MySQL database
  
-$db_selected = mysqli_select_db($connection,$database);
-if (!$db_selected) {
-  die ('Can\'t use db : ' . mysqli_error($connection));
-}
  
-$query = "SELECT * FROM $table";
+$query = "SELECT id, name, protocol, ports, ip, COUNT(id) as count, longitude, latitude, code, code3, country, city, MAX(timestamp) as timestamp, MAX(ban) as ban FROM `".$table."` group by ip order by id DESC";
 $result = mysqli_query($connection,$query);
 if (!$result) {
   die('Invalid query: ' . mysqli_error($connection));
