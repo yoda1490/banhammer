@@ -4,18 +4,6 @@ header("Content-type: text/text");
  
 require("dbinfo.php");
  
-// Opens a connection to a MySQL server
- 
-$connection=mysqli_connect ($db_host, $db_user, $db_pwd);
-if (!$connection) {  die('Not connected : ' . mysqli_error($connection));}
- 
-// Set the active MySQL database
- 
-$db_selected = mysqli_select_db($connection,$database);
-if (!$db_selected) {
-  die ('Can\'t use db : ' . mysqli_error($connection));
-}
- 
 // Create an array to hold the data
  
 $xx = array();
@@ -55,10 +43,10 @@ print json_encode($xx);
  
 function getdataset($query)
 {
- global $connection;
-    $result = mysqli_query($connection,$query);
+    global $link;
+    $result = mysqli_query($link,$query);
     if (!$result) {
-      die('Invalid query: ' . mysqli_error($connection));
+      die('Invalid query: ' . mysqli_error($link));
     }
  
     $rows = array();

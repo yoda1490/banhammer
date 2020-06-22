@@ -6,9 +6,6 @@
 $home = __DIR__; // path to fail2sql directory
 
 require($home."/../dbinfo.php");
-$link = mysqli_connect('127.0.0.1', 'fail2ban', 'glyKS66tNxPPxQFO', 'fail2ban') // host, username, password
-  or die('Could not connect: ' . mysqli_error());
-mysqli_select_db($link,'fail2ban') or die('Could not select database');
 
 $geoCityFile=$home."/GeoLiteCity.dat";
 
@@ -17,7 +14,7 @@ $action = $_SERVER["argv"][1];
 if ($action == "-l") {
   $query = "SELECT *, COUNT(IP) FROM `fail2ban` GROUP BY IP limit 200";
   $result = mysqli_query($link,$query) or die('Query failed: ' . mysqli_error($link));
-  while ($row = mysqli_fetch_array($result, MYSQL_NUM)) {
+  while ($row = mysqli_fetch_array($result, MYSQLI_NUM)) {
     echo $row[1]."(".$row[3]."/".$row[2]."): ".$row[4]." | Count: ".$row[5]." | Geo: ".$row[9]."\n";
   }
   mysqli_close($link);
