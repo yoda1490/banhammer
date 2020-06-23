@@ -1,5 +1,6 @@
 
-Fail2SQL v1.0 by Jordan Tomkinson <jordan@moodle.com>
+Fail2SQL v2.0 by Amaury BOLLER
+From Fail2SQL v1.0 by Jordan Tomkinson <jordan@moodle.com>
 
 ============
 Installation
@@ -15,23 +16,31 @@ Installation
 Example for /etc/fail2ban/action.d/iptables.conf
 
 actionban = iptables -I fail2ban-<name> 1 -s <ip> -j DROP
-            /usr/local/fail2sql/fail2sql <name> <protocol> <port> <ip>
+            /usr/local/fail2sql/fail2sql -b <name> <protocol> <port> <ip>
 
 =====
 Usage
 =====
 
-fail2sql [-h|-l|-c|-u]
-	-h: The help page
-	-l: List entries in the database (max 50 showed)
-	-c: Clear the database and start fresh
-	-u: Update GeoIP database (downloads from maxmind)
+fUsage: ./fail2sql [-h|-l|-u|-b|-d]
+         -h: This page
+         -l: List entries in the database (max 50 showed)
+         -f: Flush the database and start fresh (just set flag ban to 0 for all entries, does not remove any IP)
+         -u: Update GeoIP database (Use legacy update from dl.miyuru.lk)
+         -b  <name> <protocol> <ports> <ip> : to ban an IP
+         -d <name> <ip>: to flag ip as unban
+
+To call this script from Fail2Ban append the following line to 'actionban =' and restart fail2ban
+/path/to/fail2sql -b <name> <protocol> <port> <ip>
+Example for /etc/fail2ban/action.d/iptables.conf
+actionban = iptables -I fail2ban-<name> 1 -s <ip> -j DROP
+            /usr/local/fail2sql/fail2sql -b <name> <protocol> <port> <ip>
 
 
 =======
 Contact
 =======
 
-You can contact me at jordan@moodle.com
-
+You can contact Original Author at jordan@moodle.com
+You can contact me at banhammer@boller.co
 
