@@ -11,7 +11,7 @@ $xx = array();
 // Do each sql query and add teh results to the array
  
 // Get total IPs logged
-$xx['totalip'] = getdataset("SELECT COUNT(*) as count FROM $table");
+$xx['totalip'] = getdataset("SELECT COUNT(DISTINCT(ip)) as count FROM $table");
  
 // Get total number of countries
 $xx['totalcountry'] = getdataset("SELECT COUNT(Distinct country) as count FROM $table");

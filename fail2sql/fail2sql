@@ -20,7 +20,7 @@ if ($action == "-l") {
   mysqli_close($link);
   exit;
 }else if ($action == "-f") {
-  $query = "DELETE FROM `fail2ban`";
+  $query = "UPDATE `fail2ban` set `ban` = 0";
   $result = mysqli_query($link,$query) or die('Query failed: ' . mysqli_error($link));
   echo "Resetting database\n";
   exit;
@@ -82,14 +82,14 @@ echo "";
 mysqli_close($link);
 
 function print_help() {
-  echo "Fail2SQL v1.0 by Jordan Tomkinson <jordan@moodle.com> Updated by Amaury BOLLER <a#boller.co>\n";
-  echo "Usage: ".$_SERVER["argv"][0]." [-h|-l|-c|-u]\n";
+  echo "Fail2SQL v1.0 by Jordan Tomkinson <jordan@moodle.com> Updated by Amaury BOLLER <banhammer#boller.co>\n";
+  echo "Usage: ".$_SERVER["argv"][0]." [-h|-l|-u|-b|-d]\n";
   echo "\t -h: This page\n";
   echo "\t -l: List entries in the database (max 50 showed)\n";
-  echo "\t -f: Flush the database and start fresh\n";
-  echo "\t -u: Update GeoIP database\n\n";
-  echo "\t -b  <name> <protocol> <ports> <ip> : to ban an IP";
-  echo "\t -d <name> <ip>: to flag ip as unban";
+  echo "\t -f: Flush the database and start fresh (just set flag ban to 0 for all entries, does not remove any IP)\n";
+  echo "\t -u: Update GeoIP database (Use legacy update from dl.miyuru.lk)\n";
+  echo "\t -b  <name> <protocol> <ports> <ip> : to ban an IP\n";
+  echo "\t -d <name> <ip>: to flag ip as unban\n\n";
   echo "To call this script from Fail2Ban append the following line to 'actionban =' and restart fail2ban\n";
   echo "/path/to/fail2sql -b <name> <protocol> <port> <ip>\n";
   echo "Example for /etc/fail2ban/action.d/iptables.conf\n";
