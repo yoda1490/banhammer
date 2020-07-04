@@ -31,7 +31,39 @@ body {
     z-index: 10;
 }
 
+@media (min-width: 768px) {
+    .stat{
+        position: absolute !important; 
+        z-index: 401;
+        background-color: white;
+        border-radius: 20px;
+        margin: 10px;
+        max-height: calc(100vh - 40px);
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
 
+    #last_menu{
+        left: 0px;
+    }
+
+    #stats_menu{
+        right: 0px
+    }
+
+    #map{
+	width: 100vw;
+        height: 100vh;
+        position: fixed;
+        padding: 0px;
+        margin: 0px;
+        left: 0px;
+    }
+    
+    .leaflet-left .leaflet-control {
+        margin-left: 350px;
+    }
+}
 #stats_menu .stat { width: 300px; margin: 0 1%; display: block; float: left;}
 #stats_menu #statproto { width: 200px;}
 #stats_menu #statstat { width: 200px;}

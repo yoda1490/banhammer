@@ -29,7 +29,7 @@ $xx['protos'] = getdataset("SELECT name,COUNT(name) as count FROM $table GROUP B
 $xx['totals'] = getdataset("SELECT code,country,COUNT(*) as count FROM $table GROUP BY country ORDER BY count DESC LIMIT 5");
  
 //Get last 5 Countries
-$xx['last'] = getdataset("SELECT code,country,MAX(timestamp) FROM $table GROUP BY country ORDER BY timestamp DESC limit 5");
+$xx['last'] = getdataset("SELECT code,country,max(timestamp) as timestamp FROM $table GROUP BY country ORDER BY timestamp DESC limit 5");
 
 //Get last IPs
 $xx['lastips'] = getdataset("SELECT ip,code,country, timestamp FROM $table ORDER BY timestamp DESC limit 30");

@@ -86,7 +86,7 @@ function createMarker(data) {
     });
 
 
-    var html = "<b>" + data.name + " " + "</b><br />" + data.country + ", "+data.city+" <br/>" + data.ip;
+    var html = "<b>" + data.name + " " + "</b><br />" + data.country + ", "+data.city+" <br/>" + data.ips.split(',').join("<br/>");
 
     L.marker({lon: data.longitude, lat: data.latitude}, {icon: icon}).bindPopup(html).addTo(map);
 }
@@ -100,12 +100,12 @@ function getColor(d) {
     }
     
     return d > maxPerCountry*90/100 ? '#800026' :
-           d > maxPerCountry*80/100  ? '#BD0026' :
-           d > maxPerCountry*70/100  ? '#E31A1C' :
-           d > maxPerCountry*60 /100 ? '#FC4E2A' :
-           d > maxPerCountry*50/100   ? '#FD8D3C' :
-           d > maxPerCountry*40/100   ? '#FEB24C' :
-           d > maxPerCountry*30/100   ? '#FED976' :
+           d > maxPerCountry*60/100  ? '#BD0026' :
+           d > maxPerCountry*40/100  ? '#E31A1C' :
+           d > maxPerCountry*30 /100 ? '#FC4E2A' :
+           d > maxPerCountry*20/100   ? '#FD8D3C' :
+           d > maxPerCountry*10/100   ? '#FEB24C' :
+           d > maxPerCountry*5/100   ? '#FED976' :
                       '#FFEDA0';
 }
 
