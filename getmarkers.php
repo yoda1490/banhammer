@@ -13,7 +13,7 @@ if (!$link) {  die('Not connected : ' . mysqli_error($connection));}
  
  
  
-$query = "SELECT id, name, protocol, ports, GROUP_CONCAT(ip SEPARATOR ',') as ips, COUNT(id) as count, longitude, latitude, code, code3, country, city, MAX(timestamp) as timestamp, MAX(ban) as ban FROM `".$table."` group by longitude,latitude order by id ASC";
+$query = "SELECT id, name, protocol, ports, GROUP_CONCAT(ip SEPARATOR ',') as ips, COUNT(id) as count, longitude, latitude, code, code3, country, city, MAX(timestamp) as timestamp, MAX(ban) as ban FROM `".$table."` group by longitude,latitude,ban order by id ASC";
 $result = mysqli_query($link,$query);
 if (!$result) {
   die('Invalid query: ' . mysqli_error($link));

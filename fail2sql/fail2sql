@@ -1,7 +1,8 @@
 #!/usr/bin/php
 <?PHP
 
-
+//$GEOIPURL="https://dl.miyuru.lk/geoip/maxmind/city/maxmind4.dat.gz";
+$GEOIPURL="https://dl.miyuru.lk/geoip/dbip/city/dbip4.dat.gz";
 // Change the next two lines to suit
 $home = __DIR__; // path to fail2sql directory
 
@@ -26,7 +27,7 @@ if ($action == "-l") {
   exit;
 }else if ($action == "-u") {
   if(!file_exists($geoCityFile) || time()-filemtime($geoCityFile) >= 60 * 60 * 24 ){
-  	exec("wget -O - \"https://dl.miyuru.lk/geoip/maxmind/city/maxmind4.dat.gz\" |zcat - > $geoCityFile");
+  	exec("wget -O - \"&GEOIPURL\" |zcat - > $geoCityFile");
   }else{
         echo "File is too recent, not updating it. Remove ".$geoCityFile." if you want to force refresh\n";
   } 
@@ -35,20 +36,30 @@ if ($action == "-l") {
   print_help();
 }
 
-$name = addslashes(trim($_SERVER["argv"][2]));
-$protocol = addslashes(trim($_SERVER["argv"][3]));
-$ports = addslashes(trim($_SERVER["argv"][4]));
+
 
 #not working anymore to due multiple ports ban => ports is now varchar
 #if (!preg_match('/^\d{1,5}$/', $ports)) {
 #  $ports = getservbyname($_SERVER["argv"][4], $protocol);
 #}
 
-$ip = addslashes(trim($_SERVER["argv"][5]));
+if($action == '-t'){
+  $ip = addslashes(trim($_SERVER["argv"][2]));
+  if (!$ip) {
+    print_help();
+  }
+}else{
+  $name = addslashes(trim($_SERVER["argv"][2]));
+  $protocol = addslashes(trim($_SERVER["argv"][3]));
+  $ports = addslashes(trim($_SERVER["argv"][4]));
+  $ip = addslashes(trim($_SERVER["argv"][5]));
 
-if (!$name || !$ip) {
-  print_help();
+  if (!$name || !$ip || !$protocol || !$ports) {
+    print_help();
+  }
 }
+
+
 
 if ($action == "-d") {
   $query = "UPDATE `fail2ban` set `ban`=0 where `ip`='".$ip."' and `name`='".$name."'";
@@ -58,9 +69,7 @@ if ($action == "-d") {
 }
 
 
-if (!$protocol || !$ports) {
-  print_help();
-}
+
 
 
 include($home."/geoipcity.inc");
@@ -69,16 +78,20 @@ include($home."/geoipregionvars.php");
 
 $geodb = geoip_open($geoCityFile,GEOIP_STANDARD) or die ('Failed to open Geo Database');
 $geoip = geoip_record_by_addr($geodb,$ip);
-if ($geoip) {
-  $query = "INSERT INTO `fail2ban` values (NULL, '".$name."', '".$protocol."', '".$ports."', '".$ip."', '".$geoip->longitude."', '".$geoip->latitude."', '".$geoip->country_code."', '".$geoip->country_code3."', '".$geoip->city."', '".$geoip->country_name."', NOW(), 1)";
-  echo "Inserting $ip into database with geo info\n$query";
-}else {
-  $query = "INSERT INTO `fail2ban` values ('', '".$name."', '".$protocol."', '".$ports."', '".$ip."', '', '', '', '', '', '', NOW(), 1)";
-  echo "Inserting $ip into database without geo info\n";
+if($action == '-t'){
+  print_r($geoip);
+}else{
+  if ($geoip) {
+    $query = "INSERT INTO `fail2ban` values (NULL, '".$name."', '".$protocol."', '".$ports."', '".$ip."', '".$geoip->longitude."', '".$geoip->latitude."', '".$geoip->country_code."', '".$geoip->country_code3."', '".$geoip->city."', '".$geoip->country_name."', NOW(), 1)";
+    echo "Inserting $ip into database with geo info\n$query";
+  }else {
+    $query = "INSERT INTO `fail2ban` values ('', '".$name."', '".$protocol."', '".$ports."', '".$ip."', '', '', '', '', '', '', NOW(), 1)";
+    echo "Inserting $ip into database without geo info\n";
+  }
+  $result = mysqli_query($link,$query) or die('Query failed: ' . mysqli_error($link));
 }
 
-$result = mysqli_query($link,$query) or die('Query failed: ' . mysqli_error($link));
-echo "";
+
 mysqli_close($link);
 
 function print_help() {

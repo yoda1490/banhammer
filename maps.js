@@ -1,4 +1,7 @@
 var map;
+var layerControl;
+var layerGroups= new Object();
+var colorizedCountryLayer;
 
 var stats;
 
@@ -8,10 +11,11 @@ var countryCounter=0;
 
 var markersArray=[];
 function clearOverlays() {
-    for (var i = 0; i < markersArray.length; i++) {
-        markersArray[i].setMap(null);
-    }
-    markersArray.length = 0;
+    colorizedCountryLayer.clearLayers();
+    for(var l in layerGroups){
+        layerGroups[l].clearLayers();
+    };
+        
 }
 
 function updatex() {
@@ -25,7 +29,6 @@ function loadmarkers() {
             createMarker(data[i]);
         }
     });
-
     $.getJSON("getstats.php", function(data) {
         stats=data;
 	$('.stat ol').empty();
@@ -38,7 +41,7 @@ function loadmarkers() {
         });
 
         $(data['lastips']).each(function(i,j) {
-            $("#lastips").append("<li title=\""+j.country+"\"><img src=\"images/flags/" + j.code + ".png\" alt=\"" + j.code + "\" /> " + j.timestamp.split(' ')[1] + ' ' + j.ip + "</li>");
+            $("#lastips").append("<li title=\""+j.country+" - "+j.timestamp+"\"><img src=\"images/flags/" + j.code + ".png\" alt=\"" + j.code + "\" /> " + j.timestamp.split(' ')[1] + ' ' + j.ip + "</li>");
         });
 
         $(data['protos']).each(function(i,j) {
@@ -53,7 +56,13 @@ function loadmarkers() {
         $("#ipsblocked").html(" " + data['totalip'][0].count);
         $("#countriesclocked").html(" " + data['totalcountry'][0].count);
 
-        L.geoJson(countryData, {style: style}).addTo(map);
+        if(typeof(colorizedCountryLayer) == 'undefined'){
+            colorizedCountryLayer=L.geoJson(countryData, {style: style});
+            colorizedCountryLayer.addTo(map);
+            layerControl.addOverlay(colorizedCountryLayer, "Country colorization");
+        }else{
+            colorizedCountryLayer.addData(countryData, {style: style});
+        }
 
     });
 
@@ -66,7 +75,12 @@ function createMarker(data) {
     color='red';
     letter='U';
 
-    if(data.ban == 0) color='paleblue';
+    layerName=data.name;
+
+    if(data.ban == 0){
+        color='paleblue';
+        layerName=layerName+' released'
+    }
 
     if (data.name.match(/ssh/)) {
         letter = 'S';
@@ -87,8 +101,16 @@ function createMarker(data) {
 
 
     var html = "<b>" + data.name + " " + "</b><br />" + data.country + ", "+data.city+" <br/>" + data.ips.split(',').join("<br/>");
+    var marker=L.marker({lon: data.longitude, lat: data.latitude}, {icon: icon}).bindPopup(html);
 
-    L.marker({lon: data.longitude, lat: data.latitude}, {icon: icon}).bindPopup(html).addTo(map);
+    if(typeof(layerGroups[layerName]) == 'undefined'){
+    	layerGroups[layerName] = L.layerGroup();
+        layerGroups[layerName].addTo(map);
+        layerControl.addOverlay(layerGroups[layerName], layerName);
+    }
+
+    layerGroups[layerName].addLayer(marker);
+
 }
 
 
@@ -99,13 +121,13 @@ function getColor(d) {
       d=0;
     }
     
-    return d > maxPerCountry*90/100 ? '#800026' :
-           d > maxPerCountry*60/100  ? '#BD0026' :
-           d > maxPerCountry*40/100  ? '#E31A1C' :
-           d > maxPerCountry*30 /100 ? '#FC4E2A' :
-           d > maxPerCountry*20/100   ? '#FD8D3C' :
-           d > maxPerCountry*10/100   ? '#FEB24C' :
-           d > maxPerCountry*5/100   ? '#FED976' :
+    return d > maxPerCountry*80/100 ? '#800026' :
+           d > maxPerCountry*50/100  ? '#BD0026' :
+           d > maxPerCountry*30/100  ? '#E31A1C' :
+           d > maxPerCountry*20 /100 ? '#FC4E2A' :
+           d > maxPerCountry*10/100   ? '#FD8D3C' :
+           d > maxPerCountry*6/100   ? '#FEB24C' :
+           d > maxPerCountry*2/100   ? '#FED976' :
                       '#FFEDA0';
 }
 
@@ -125,29 +147,37 @@ var oldinfowindow = null;
 var map;
 
 $(document).ready(function() {
-   // initialize Leaflet
-    //map = L.map('map').setView({lon: 0, lat: 0}, 2);
-
-    map = L.map('map', {
+   map = L.map('map', {
         center: [0, 0],
         zoom: 2
     });
 
+    	
+	
+
     // add the OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       worldCopyJump: true,
       attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-    }).addTo(map);
+    })
 
+    map.addLayer(osm);
+    
+
+    //show the box to controll layer
+    layerControl = L.control.layers(null, null, {position: 'topleft'});
+    //add default map
+    layerControl.addBaseLayer(osm, "OSM default")
 
     // show the scale bar on the lower left corner
     L.control.scale().addTo(map);
+    
+
     loadmarkers();
 
-    //need stats
-    //L.geoJson(countryData, {style: style}).addTo(map);
-
+    
+    layerControl.addTo(map);
 
     var myVar = setInterval(function() {
         updatex();
