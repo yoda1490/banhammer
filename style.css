@@ -77,3 +77,10 @@ body {
 	padding-left: 10px;
 
 }
+
+#whois .modal-body{
+    display: block;
+    unicode-bidi: embed;
+    font-family: monospace;
+    white-space: pre;
+}

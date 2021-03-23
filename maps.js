@@ -24,12 +24,12 @@ function updatex() {
 }
 
 function loadmarkers() {
-    $.getJSON("getmarkers.php", function(data) {
+    $.getJSON("get.php?action=markers", function(data) {
         for (var i in data) {
             createMarker(data[i]);
         }
     });
-    $.getJSON("getstats.php", function(data) {
+    $.getJSON("get.php?action=stats", function(data) {
         stats=data;
 	$('.stat ol').empty();
         $(data['totals']).each(function(i,j) {
@@ -41,7 +41,7 @@ function loadmarkers() {
         });
 
         $(data['lastips']).each(function(i,j) {
-            $("#lastips").append("<li title=\""+j.country+" - "+j.timestamp+"\"><img src=\"images/flags/" + j.code + ".png\" alt=\"" + j.code + "\" /> " + j.timestamp.split(' ')[1] + ' ' + j.ip + "</li>");
+            $("#lastips").append("<li title=\""+j.country+" - "+j.timestamp+"\"><img src=\"images/flags/" + j.code + ".png\" alt=\"" + j.code + "\" /> " + j.timestamp.split(' ')[1] + ' <a href="#" onclick="whois(\''+j.id+'\');return false;">' + j.ip + "</a></li>");
         });
 
         $(data['protos']).each(function(i,j) {
@@ -54,6 +54,7 @@ function loadmarkers() {
         };
 
         $("#ipsblocked").html(" " + data['totalip'][0].count);
+        $("#ipsban").html(" " + data['ipban'][0].count);
         $("#countriesclocked").html(" " + data['totalcountry'][0].count);
 
         if(typeof(colorizedCountryLayer) == 'undefined'){
@@ -92,7 +93,7 @@ function createMarker(data) {
         letter = 'S';
     }
 
-    iname = "markers/"+color+"_Marker"+letter+".png";
+    iname = "images/markers/"+color+"_Marker"+letter+".png";
 
     var icon = L.icon({
         iconUrl: iname,
@@ -100,7 +101,10 @@ function createMarker(data) {
     });
 
 
-    var html = "<b>" + data.name + " " + "</b><br />" + data.country + ", "+data.city+" <br/>" + data.ips.split(',').join("<br/>");
+    var html = "<b>" + data.name + " " + "</b><br />" + data.country + ", "+data.city+" <br/>";
+    $.each(data.ips.split(','), function(i,j){
+        html+='<a href="#" onclick="whois(\''+j.split(':')[0]+'\');return false;">'+j.split(':')[1]+'</a><br/>';
+    });
     var marker=L.marker({lon: data.longitude, lat: data.latitude}, {icon: icon}).bindPopup(html);
 
     if(typeof(layerGroups[layerName]) == 'undefined'){
@@ -143,7 +147,16 @@ function style(feature) {
     };
 }
 
-var oldinfowindow = null;
+
+//give an id in the table and retourne the ip whois corresponding
+function whois(id){
+    $.getJSON("get.php?action=whois&ip="+id, function(data) {
+        $('#whois .modal-body').html(data.whois);
+        $('#whois .modal-title').html(data.ip)
+        $('#whois').modal('show');
+    });
+}
+
 var map;
 
 $(document).ready(function() {
@@ -158,7 +171,9 @@ $(document).ready(function() {
     // add the OpenStreetMap tiles
     osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
+      minZoom: 2,
       worldCopyJump: true,
+      noWrap: false,
       attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     })
 
