@@ -27,7 +27,7 @@ if ($action == "-l") {
   exit;
 }else if ($action == "-u") {
   if(!file_exists($geoCityFile) || time()-filemtime($geoCityFile) >= 60 * 60 * 24 ){
-  	exec("wget -O - \"&GEOIPURL\" |zcat - > $geoCityFile");
+  	exec("wget -O - \"$GEOIPURL\" |zcat - > $geoCityFile");
   }else{
         echo "File is too recent, not updating it. Remove ".$geoCityFile." if you want to force refresh\n";
   } 
