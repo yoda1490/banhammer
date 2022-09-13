@@ -1,4 +1,14 @@
 <?php
+#SECURITY
+header("Access-Control-Allow-Origin: ".$webServer);
+header("Strict-Transport-Security: max-age = 63072000; includeSubDomains; preload");
+header("X-Frame-Options: NEVER");
+header("X-Content-Type-Options: nosniff");
+header("X-XSS-Protection: 1; mode=block"); //for old browser
+//header("Content-Security-Policy: default-src 'self'; img-src *;script-src 'unsafe-inline'");
+header("Content-Security-Policy: block-all-mixed-content");
+header("Referrer-Policy: same-origin");
+header("Permissions-Policy: geolocation=(),midi=(),microphone=(),camera=(),autoplay=()");
 
 header("Content-type: application/json");
  
