@@ -19,7 +19,4 @@ Demo https://ban.boller.co
 
 # Installation Steps:
  - Deploy the code somewhere on your server
- - Create the needed table into your MySQL server, SQL code in fail2sql/fail2ban.sql
- - Copy dbinfo.php.example to dbinfo.php and edit the configuration
- - Copy the file fail2sql/banhammer.conf into the action folder of fail2ban
- - Add action banhammer into fail2ban configuration rules
+ - Follow instructions in [fail2sql/README.md](https://github.com/yoda1490/banhammer/tree/master/fail2sql)
