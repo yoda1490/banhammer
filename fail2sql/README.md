@@ -25,7 +25,7 @@ actionban = iptables -I fail2ban-<name> 1 -s <ip> -j DROP
          -b  <name> <protocol> <ports> <ip> : to ban an IP
          -d <name> <ip>: to flag ip as unban        
 
-# Installation in fail2ban
+# fail2ban configuration
  - Copy banhammer.conf into fail2ban action folder
 ```shell
 cp banhammer.conf /etc/fail2ban/action.d/
