@@ -1,8 +1,19 @@
 <?php
-$db_host = '127.0.0.1';
+$db_host = 'localhost';
 $db_user = 'fail2ban';
-$db_pwd = '**********';
+$db_pwd = 'XXXX';
 
-$database = 'fail2ban';
+$database = 'XXXX';
 $table = 'fail2ban';
+
+// Opens a connection to a MySQL server
+$link=mysqli_connect ($db_host, $db_user, $db_pwd);
+if (!$link) {  die('Not connected : ' . mysqli_error($connection));}
+
+// Set the active MySQL database
+$db_selected = mysqli_select_db($link,$database);
+if (!$db_selected) {
+  die ('Can\'t use db : ' . mysqli_error($link));
+}
+
 ?>
