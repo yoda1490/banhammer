@@ -13,42 +13,42 @@ header("Permissions-Policy: geolocation=(),midi=(),microphone=(),camera=(),autop
 header("Content-type: application/json");
  
 require("dbinfo.php");
+// Ensure proper charset for performance & correctness
+if(isset($link)) { mysqli_set_charset($link, 'utf8mb4'); }
  
 
-function get_stats(){
+function get_stats_cached(){
     global $table;
-    // Create an array to hold the data
-    $xx = array();
-    // Do each sql query and add teh results to the array
-     
-    // Get total IPs logged
-    $xx['totalip'] = getdataset("SELECT COUNT(DISTINCT(ip)) as count FROM $table");
-
-    //get currenlty banned IPs
-    $xx['ipban'] = getdataset("SELECT COUNT(DISTINCT(ip)) as count FROM $table where `ban`=1");
-     
-    // Get total number of countries
-    $xx['totalcountry'] = getdataset("SELECT COUNT(Distinct country) as count FROM $table");
-     
-    //number of attack per country
-    foreach(getdataset("SELECT code3, country, code, count(id) as count FROM $table group by country") as $c){
-    	$xx['totalpercountry'][$c['code3']]=$c;
+    $cacheFile = __DIR__ . '/stats_cache.json';
+    $cacheTTL  = 30; // seconds
+    if(file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTTL)){
+        $raw = file_get_contents($cacheFile);
+        $decoded = json_decode($raw, true);
+        if(is_array($decoded)) { return $decoded; }
     }
 
+    $xx = array();
+    // Aggregate counts in a single query
+    $agg = getdataset("SELECT 
+        COUNT(DISTINCT ip) AS totalip,
+        COUNT(DISTINCT CASE WHEN ban=1 THEN ip END) AS ipban,
+        COUNT(DISTINCT country) AS totalcountry
+        FROM $table");
+    $xx['totalip']      = array(array('count' => $agg[0]['totalip']));
+    $xx['ipban']        = array(array('count' => $agg[0]['ipban']));
+    $xx['totalcountry'] = array(array('count' => $agg[0]['totalcountry']));
 
-    // Get count for each protocol
-    $xx['protos'] = getdataset("SELECT name,COUNT(name) as count FROM $table GROUP BY name");
-     
-    // Get total counts for each country
-    $xx['totals'] = getdataset("SELECT code,country,COUNT(*) as count FROM $table GROUP BY country ORDER BY count DESC LIMIT 5");
-     
-    //Get last 5 Countries
-    $xx['last'] = getdataset("SELECT code,country,max(`timestamp`) as `timestamp` FROM $table GROUP BY country ORDER BY timestamp DESC limit 5");
+    foreach(getdataset("SELECT code3, country, code, COUNT(id) AS count FROM $table GROUP BY country") as $c){
+        $xx['totalpercountry'][$c['code3']] = $c;
+    }
 
-    //Get last IPs
-    $xx['lastips'] = getdataset("SELECT ip,code,country,`timestamp`,id FROM $table ORDER BY timestamp DESC limit 30");
-     
-    // Return the data in json
+    $xx['protos'] = getdataset("SELECT name, COUNT(name) AS count FROM $table GROUP BY name");
+    $xx['totals'] = getdataset("SELECT code, country, COUNT(*) AS count FROM $table GROUP BY country ORDER BY count DESC LIMIT 5");
+    $xx['last']   = getdataset("SELECT code, country, MAX(`timestamp`) AS `timestamp` FROM $table GROUP BY country ORDER BY timestamp DESC LIMIT 5");
+    $xx['lastips']= getdataset("SELECT ip, code, country, `timestamp`, id FROM $table ORDER BY timestamp DESC LIMIT 30");
+
+    // Write cache (atomic)
+    file_put_contents($cacheFile, json_encode($xx));
     return $xx;
 }
 
@@ -108,9 +108,9 @@ function get_banned_whois(){
 
 $return=null;
 if(isset($_GET['action']) && $_GET['action'] == 'markers'){
-    $return=get_markers();
+    $return = get_markers();
 }elseif(isset($_GET['action']) && $_GET['action'] == 'stats'){
-    $return=get_stats();
+    $return = get_stats_cached();
 }elseif(isset($_GET['action']) && $_GET['action'] == 'whois'){
     $return=get_banned_whois();
 }else{
