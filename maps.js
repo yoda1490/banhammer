@@ -273,13 +273,13 @@ $(document).ready(function() {
 	
 
     // add the OpenStreetMap tiles
-    osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      minZoom: 2,
-      worldCopyJump: true,
-      noWrap: false,
-      attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-    })
+        osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            minZoom: 2,
+            worldCopyJump: false, // prevent world repetition
+            noWrap: true,         // prevent world repetition
+            attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        })
 
     map.addLayer(osm);
     
