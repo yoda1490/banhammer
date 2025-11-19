@@ -9,6 +9,7 @@ var stats;
 //used to determine color scale
 var maxPerCountry=0;
 var countryCounter=0;
+var colorThresholds=[];
 
 var markersArray=[];
 function clearOverlays() {
@@ -53,9 +54,43 @@ function loadmarkers() {
         });
 
         countryCounter=data['totalpercountry'];
+        
+        // Calculate color thresholds based on actual country counts
+        var countryCounts = [];
         for(let i in countryCounter){
+          countryCounts.push(countryCounter[i].count);
           if(countryCounter[i].count>maxPerCountry)maxPerCountry=countryCounter[i].count;
         };
+        
+        // Sort counts in descending order
+        countryCounts.sort(function(a, b){return b - a});
+        
+        // Define thresholds to ensure top 5 countries get darkest color
+        // and better distribution across the rest
+        if(countryCounts.length >= 5){
+          colorThresholds = [
+            countryCounts[4],      // Top 5 (darkest)
+            countryCounts[Math.min(10, countryCounts.length-1)],  // Top 6-10
+            countryCounts[Math.min(20, countryCounts.length-1)],  // Top 11-20
+            countryCounts[Math.min(35, countryCounts.length-1)],  // Top 21-35
+            countryCounts[Math.min(50, countryCounts.length-1)],  // Top 36-50
+            countryCounts[Math.min(75, countryCounts.length-1)],  // Top 51-75
+            countryCounts[Math.min(100, countryCounts.length-1)], // Top 76-100
+            1  // Any country with at least 1 ban
+          ];
+        }else{
+          // Fallback for fewer countries
+          colorThresholds = [
+            maxPerCountry * 0.8,
+            maxPerCountry * 0.5,
+            maxPerCountry * 0.3,
+            maxPerCountry * 0.2,
+            maxPerCountry * 0.1,
+            maxPerCountry * 0.05,
+            maxPerCountry * 0.01,
+            1
+          ];
+        }
 
         $("#ipsblocked").html(" " + data['totalip'][0].count);
         $("#ipsban").html(" " + data['ipban'][0].count);
@@ -151,14 +186,16 @@ function getColor(d) {
       d=0;
     }
     
-    return d > maxPerCountry*80/100 ? '#800026' :
-           d > maxPerCountry*50/100  ? '#BD0026' :
-           d > maxPerCountry*30/100  ? '#E31A1C' :
-           d > maxPerCountry*20 /100 ? '#FC4E2A' :
-           d > maxPerCountry*10/100   ? '#FD8D3C' :
-           d > maxPerCountry*6/100   ? '#FEB24C' :
-           d > maxPerCountry*2/100   ? '#FED976' :
-                      '#FFEDA0';
+    // Use calculated thresholds for better distribution
+    return d >= colorThresholds[0] ? '#800026' :  // Top 5 - Very dark red
+           d >= colorThresholds[1] ? '#BD0026' :  // Top 6-10 - Dark red
+           d >= colorThresholds[2] ? '#E31A1C' :  // Top 11-20 - Red
+           d >= colorThresholds[3] ? '#FC4E2A' :  // Top 21-35 - Orange-red
+           d >= colorThresholds[4] ? '#FD8D3C' :  // Top 36-50 - Orange
+           d >= colorThresholds[5] ? '#FEB24C' :  // Top 51-75 - Light orange
+           d >= colorThresholds[6] ? '#FED976' :  // Top 76-100 - Yellow
+           d >= colorThresholds[7] ? '#FFEDA0' :  // Rest with at least 1 ban - Light yellow
+                      '#FFFFFF';                   // No bans - White
 }
 
 function style(feature) {
