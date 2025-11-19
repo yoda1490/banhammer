@@ -1,7 +1,10 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<title>Ban Hammer</title>
+	<meta charset="UTF-8">
+	<title>Ban Hammer - Security Monitoring</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Real-time ban hammer security monitoring dashboard">
 	<link rel="shortcut icon" href="./favicon.png">
 
 	<link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css"/>
@@ -19,8 +22,8 @@
 	<div id="container">
 		<div id="index" class="row">
 			<div id="last_menu" class="stat col-md-2">
-				 <h2>Ban hammer</h2>
-				<strong>Last attack</strong>
+				<h2>🔨 Ban Hammer</h2>
+				<strong>Last Attacks</strong>
 				<ol id="lastips"></ol>
 			</div>
 			<div id="map_outer" class="col-md-8">
@@ -28,41 +31,39 @@
 			</div>
 			<div id="stats_menu" class="stat col-md-2">
 				<div id="statstat">
-					<strong><strong>Stats:</strong></strong>
+					<strong>📊 Statistics</strong>
 					<ul>
-    						<li><strong title="Total distinct IP detected and banned">IPs blocked:</strong><span id="ipsblocked"></span></li>
-    						<li><strong>Currently banned:</strong><span id="ipsban"></span></li>
-    						<li><strong>Countries:</strong><span id="countriesclocked"></span></li>
+    						<li><strong title="Total distinct IP detected and banned">IPs Blocked:</strong><span id="ipsblocked">0</span></li>
+    						<li><strong title="IPs currently banned">Currently Banned:</strong><span id="ipsban">0</span></li>
+    						<li><strong title="Total countries blocked">Countries:</strong><span id="countriesclocked">0</span></li>
 					</ul>
 				</div>
 				<div id="statproto">
-					<strong>Jails: </strong>
+					<strong>🔐 Jails</strong>
 					<ol id="protocols"></ol>
 				</div>
 				<div>
-					<strong>Latest 5 Blocked Countries: </strong>
+					<strong>🕐 Latest Blocks</strong>
 					<ol id="last5"></ol>
 				</div>
 				<div>
-					<strong>Top 5 Blocked Countries: </strong>
+					<strong>⚠️ Top 5 Blocks</strong>
 					<ol id="top5"></ol>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<div class="modal fade" id="whois" tabindex="-1" role="dialog" aria-labelledby="WHOIS" aria-hidden="true">
+	<div class="modal fade" id="whois" tabindex="-1" role="dialog" aria-labelledby="whoislabel" aria-hidden="true">
 	  <div class="modal-dialog modal-xl" role="document">
 	    <div class="modal-content">
 	      <div class="modal-header">
-	        <h5 class="modal-title"></h5>
+	        <h5 class="modal-title" id="whoislabel">WHOIS Information</h5>
 	        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
 	          <span aria-hidden="true">&times;</span>
 	        </button>
 	      </div>
-	      <div class="modal-body">
-	        
-	      </div>
+	      <div class="modal-body"></div>
 	      <div class="modal-footer">
 	        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
 	      </div>

@@ -1,86 +1,310 @@
-html { }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
 body {
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #f5f5f5;
+  color: #333;
 }
 
-#index{
-	width: 100%;
-	height: 100%;
+#container {
+  width: 100%;
+  height: 100%;
 }
 
-#container{
-	width: 100%;
-	height: 100%;
-	#background-color: #aad3df;
+#index {
+  width: 100%;
+  height: 100%;
 }
 
-
-.flex_col{
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
+.flex_col {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 
-#map { 
-    width: 100%;
-    height: 100%;
+#map {
+  width: 100%;
+  height: 100%;
 }
 
-
-#stats_menu { 
-    flex: 0 0 auto;
-    z-index: 10;
+#stats_menu {
+  flex: 0 0 auto;
+  z-index: 10;
 }
 
+/* Styling for stat panels */
+.stat {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.stat:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+.stat h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: #1a1a1a;
+  border-bottom: 3px solid #dc3545;
+  padding-bottom: 8px;
+}
+
+.stat strong {
+  font-size: 1rem;
+  color: #555;
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.stat ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.stat ul li {
+  padding: 6px 0;
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stat ul li:last-child {
+  border-bottom: none;
+}
+
+.stat ul li span {
+  font-weight: 600;
+  color: #dc3545;
+  font-size: 1.1rem;
+}
+
+.stat ol {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 8px;
+}
+
+.stat ol li {
+  padding: 6px 0;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat ol li img {
+  width: 20px;
+  height: 15px;
+  border-radius: 2px;
+}
+
+.stat ol li a {
+  color: #0066cc;
+  text-decoration: none;
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+}
+
+.stat ol li a:hover {
+  text-decoration: underline;
+  color: #004499;
+}
+
+#statstat {
+  margin-bottom: 15px;
+}
+
+#statproto {
+  margin-bottom: 15px;
+}
+
+#lastips {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+#lastips li {
+  padding: 8px 0;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+#lastips li:last-child {
+  border-bottom: none;
+}
+
+#lastips li img {
+  width: 20px;
+  height: 15px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+#lastips li a {
+  color: #0066cc;
+  text-decoration: none;
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+  flex-grow: 1;
+}
+
+#lastips li a:hover {
+  text-decoration: underline;
+  color: #004499;
+}
+
+/* Modal styling */
+#whois .modal-body {
+  display: block;
+  unicode-bidi: embed;
+  font-family: 'Courier New', monospace;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 6px;
+  line-height: 1.4;
+  font-size: 0.9rem;
+}
+
+#whois .modal-header {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: white;
+  border-bottom: none;
+}
+
+#whois .modal-title {
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+#whois .modal-header .close {
+  color: white;
+  opacity: 0.8;
+}
+
+#whois .modal-header .close:hover {
+  opacity: 1;
+}
+
+/* Leaflet overrides */
+.leaflet-control {
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-control-layers-toggle {
+  width: 36px !important;
+  height: 36px !important;
+  background-size: 24px 24px !important;
+}
+
+/* Responsive design for desktop */
 @media (min-width: 768px) {
-    .stat{
-        position: absolute !important; 
-        z-index: 401;
-        background-color: white;
-        border-radius: 10px;
-        margin: 10px;
-        max-height: calc(100vh - 40px);
-        overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    }
+  .stat {
+    position: absolute !important;
+    z-index: 401;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    min-width: 280px;
+  }
 
-    #last_menu{
-        left: 0px;
-    }
+  #last_menu {
+    left: 10px;
+    top: 10px;
+    max-width: 320px;
+  }
 
-    #stats_menu{
-        right: 0px
-    }
+  #stats_menu {
+    right: 10px;
+    top: 10px;
+    max-width: 340px;
+  }
 
-    #map{
-	width: 100vw;
-        height: 100vh;
-        position: fixed;
-        padding: 0px;
-        margin: 0px;
-        left: 0px;
-    }
-    
-    .leaflet-left .leaflet-control {
-        margin-left: 350px;
-    }
+  #map {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    padding: 0;
+    margin: 0;
+    left: 0;
+  }
 
-    .leaflet-control-layers {
-	    margin-right: 200px;
-    }
-}
-#stats_menu .stat { width: 300px; margin: 0 1%; display: block; float: left;}
-#stats_menu #statproto { width: 200px;}
-#stats_menu #statstat { width: 200px;}
+  .leaflet-left .leaflet-control {
+    margin-left: 350px;
+  }
 
-#lastips{
-	list-style-type: none;
-	padding-left: 10px;
-
+  .leaflet-control-layers {
+    margin-right: 200px;
+  }
 }
 
-#whois .modal-body{
-    display: block;
-    unicode-bidi: embed;
-    font-family: monospace;
-    white-space: pre;
+/* Responsive design for mobile */
+@media (max-width: 767px) {
+  #index {
+    flex-direction: column;
+  }
+
+  .stat {
+    margin: 10px 0;
+    max-height: auto;
+  }
+
+  #last_menu,
+  #stats_menu {
+    position: static !important;
+    max-width: 100%;
+  }
+
+  #map {
+    width: 100%;
+    height: 50vh;
+  }
+
+  .stat h2 {
+    font-size: 1.25rem;
+  }
+
+  .stat strong {
+    font-size: 0.9rem;
+  }
+}
+
+/* Scrollbar styling */
+.stat::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stat::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.stat::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 3px;
+}
+
+.stat::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
