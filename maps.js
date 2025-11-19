@@ -1,6 +1,7 @@
 var map;
 var layerControl;
 var layerGroups= new Object();
+var markerClusters= new Object();
 var colorizedCountryLayer;
 
 var stats;
@@ -14,6 +15,9 @@ function clearOverlays() {
     colorizedCountryLayer.clearLayers();
     for(var l in layerGroups){
         layerGroups[l].clearLayers();
+    };
+    for(var c in markerClusters){
+        markerClusters[c].clearLayers();
     };
         
 }
@@ -107,13 +111,35 @@ function createMarker(data) {
     });
     var marker=L.marker({lon: data.longitude, lat: data.latitude}, {icon: icon}).bindPopup(html);
 
-    if(typeof(layerGroups[layerName]) == 'undefined'){
-    	layerGroups[layerName] = L.layerGroup();
-        layerGroups[layerName].addTo(map);
-        layerControl.addOverlay(layerGroups[layerName], layerName);
+    // Create cluster group if it doesn't exist
+    if(typeof(markerClusters[layerName]) == 'undefined'){
+        markerClusters[layerName] = L.markerClusterGroup({
+            showCoverageOnHover: true,
+            zoomToBoundsOnClick: true,
+            spiderfyOnMaxZoom: true,
+            removeOutsideVisibleBounds: true,
+            iconCreateFunction: function(cluster) {
+                var childCount = cluster.getChildCount();
+                var c = ' marker-cluster-';
+                if (childCount < 10) {
+                    c += 'small';
+                } else if (childCount < 100) {
+                    c += 'medium';
+                } else {
+                    c += 'large';
+                }
+                return new L.DivIcon({ 
+                    html: '<div><span>' + childCount + '</span></div>', 
+                    className: 'marker-cluster' + c, 
+                    iconSize: new L.Point(40, 40) 
+                });
+            }
+        });
+        markerClusters[layerName].addTo(map);
+        layerControl.addOverlay(markerClusters[layerName], layerName);
     }
 
-    layerGroups[layerName].addLayer(marker);
+    markerClusters[layerName].addLayer(marker);
 
 }
 
@@ -197,6 +223,19 @@ $(document).ready(function() {
     var myVar = setInterval(function() {
         updatex();
     }, 1000 * 60 * 5);
+
+    // Panel toggle functionality
+    $('#toggle-left').on('click', function() {
+        $('#last_menu').toggleClass('hidden');
+        $(this).toggleClass('collapsed');
+        $(this).html($(this).hasClass('collapsed') ? '▶' : '◀');
+    });
+
+    $('#toggle-right').on('click', function() {
+        $('#stats_menu').toggleClass('hidden');
+        $(this).toggleClass('collapsed');
+        $(this).html($(this).hasClass('collapsed') ? '◀' : '▶');
+    });
 });
 
 
