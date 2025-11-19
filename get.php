@@ -55,7 +55,7 @@ function get_stats(){
 function get_markers() {
     global $link;
     global $table;
-    $query = "SELECT id, name, protocol, ports, GROUP_CONCAT(CONCAT(id,':',ip) SEPARATOR ',') as ips, COUNT(id) as count, longitude, latitude, code, code3, country, city, MAX(timestamp) as timestamp, MAX(ban) as ban FROM `".$table."` group by longitude,latitude,ban order by id ASC";
+    $query = "SELECT id, name, protocol, ports, GROUP_CONCAT(CONCAT(id,':',ip) SEPARATOR ',') as ips, COUNT(id) as count, longitude, latitude, code, code3, country, city, MAX(timestamp) as timestamp, MAX(ban) as ban FROM `".$table."` WHERE ban=1 group by longitude,latitude order by id ASC";
     $result = mysqli_query($link,$query);
     if (!$result) {
       die('Invalid query: ' . mysqli_error($link));
