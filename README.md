@@ -36,23 +36,14 @@ BanHammer is a web-based dashboard that visualizes fail2ban security events in r
   - Latest country blocks
 
 ### Color Scale (Dynamic)
-The country colors adapt based on actual attack data:
-- **Very Dark Red** - Top 5 countries (highest attack volume)
-- **Dark Red** - >1,000 bans
-- **Red** - >500 bans
-- **Orange-Red** - >200 bans
-- **Orange** - >100 bans
-- **Light Orange** - >50 bans
-- **Yellow** - >20 bans
-- **Light Yellow** - ≥1 ban
-- **White** - No bans
+The country colors adapt based on actual attack data
 
 ### Technical Highlights
 - **Auto-Refresh** - Updates every 5 minutes
 - **Loader Animation** - Progress indicator during data loading
 - **Marker Clustering** - Groups nearby ban events for clarity
 - **WHOIS Lookup** - Modal with full WHOIS details
-- **Local Libraries** - All deps local (jQuery 3.7.1, Bootstrap 4.6.2, Leaflet 1.6.0)
+- **Local Libraries** - All deps local (jQuery 3.7.1, Bootstrap 4.6.2, Leaflet 1.9.4)
 
 ## 📦 Technology Stack
 
@@ -62,7 +53,7 @@ The country colors adapt based on actual attack data:
 - **fail2sql** - Fail2ban integration script
 
 ### Frontend
-- **Leaflet 1.6.0** - Interactive mapping
+- **Leaflet 1.9.4** - Interactive mapping
 - **Leaflet.MarkerCluster 1.5.3** - Marker clustering
 - **Bootstrap 4.6.2** - Responsive UI framework
 - **jQuery 3.7.1** - DOM manipulation
@@ -146,18 +137,7 @@ For existing installations, apply performance indexes:
 mysql -u fail2ban -p fail2ban < fail2sql/upgrade.sql
 ```
 
-Changes applied:
-- Engine: MyISAM → InnoDB (better concurrency)
-- Optimized column types (IPv6 support, numeric geo)
-- Performance indexes on `ban`, `country`, `timestamp`, `code3`, `ip`, `name`, `longitude/latitude`
 
-### API Performance
-
-The dashboard includes optimizations:
-- **Stats Caching** - 30s filesystem cache for aggregated stats
-- **Single Query** - Aggregated counts in one DB query instead of 4
-- **Bulk HTML** - Pre-built HTML instead of jQuery append loops
-- **Local Libraries** - No CDN delays
 
 ## 📡 API Endpoints
 
@@ -261,10 +241,6 @@ Retrieves WHOIS information for an IP.
 - Check browser console for JS errors
 - Verify `countries.geojson.js` is loaded
 
-**Stats taking >5 seconds?**
-- Check MySQL performance with `EXPLAIN` on queries
-- Verify indexes are applied: `mysql fail2ban -e "SHOW INDEXES FROM fail2ban;"`
-- Clear cache: `rm /var/www/banhammer/stats_cache.json`
 
 **No data showing?**
 - Verify `dbinfo.php` credentials
@@ -275,7 +251,7 @@ Retrieves WHOIS information for an IP.
 
 - **Original:** ByteMe (2014) - Google Maps version
 - **rjkreider** - PHP 7.x update, GeoIP updater fix
-- **Amaury BOLLER** - OpenStreetMap migration, styling, optimizations
+- **yoda1490** - OpenStreetMap migration, styling, optimizations
 - **fail2sql:** Based on v1.0 by Jordan Tomkinson
 
 ## 📄 License
