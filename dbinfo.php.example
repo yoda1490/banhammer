@@ -5,18 +5,31 @@ $db_user = getenv('DB_USER') ?: 'fail2ban';
 $db_pwd = getenv('DB_PASSWORD') ?: 'fail2ban';
 $database = getenv('DB_NAME') ?: 'fail2ban';
 $table = getenv('DB_TABLE') ?: 'fail2ban';
-$webServer = getenv('WEB_SERVER') ?: '*';
 
 // Opens a connection to a MySQL server
-$link = mysqli_connect($db_host, $db_user, $db_pwd);
+$link = @mysqli_connect($db_host, $db_user, $db_pwd);
 if (!$link) {
-    die('Not connected : ' . mysqli_error($link));
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'DB_CONNECT',
+        'message' => 'Database connection failed',
+        'details' => mysqli_connect_error()
+    ]);
+    exit;
 }
 
 // Set the active MySQL database
-$db_selected = mysqli_select_db($link, $database);
+$db_selected = @mysqli_select_db($link, $database);
 if (!$db_selected) {
-    die('Can\'t use db : ' . mysqli_error($link));
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'DB_SELECT',
+        'message' => 'Database selection failed',
+        'details' => mysqli_error($link)
+    ]);
+    exit;
 }
 
 // Set the webServer variable for CORS headers (used in get.php)

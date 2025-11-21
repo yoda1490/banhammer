@@ -48,6 +48,11 @@ function loadmarkers() {
     
     // STEP 1: Load markers FIRST for faster page display
     $.getJSON("get.php?action=markers", function(markerData) {
+        if (markerData && markerData.error) {
+            hideLoader();
+            showDbError(markerData);
+            return;
+        }
         if (markerData && Array.isArray(markerData)) {
             for (var i in markerData) {
                 createMarker(markerData[i]);
@@ -59,6 +64,11 @@ function loadmarkers() {
             // Safety checks for undefined data
             if (!data) {
                 hideLoader();
+                return;
+            }
+            if (data.error) {
+                hideLoader();
+                showDbError(data);
                 return;
             }
             
@@ -157,17 +167,42 @@ function loadmarkers() {
             
             hideLoader();
 
-        }).fail(function() {
-            console.warn("Stats loading failed, but markers are displayed");
+        }).fail(function(jqXHR) {
+            const data = jqXHR && jqXHR.responseJSON ? jqXHR.responseJSON : null;
+            if (data && data.error) {
+                showDbError(data);
+            } else {
+                console.warn("Stats loading failed, but markers are displayed");
+            }
             hideLoader();
         });
 
-    }).fail(function() {
-        console.error("Failed to load markers");
+    }).fail(function(jqXHR) {
+        const data = jqXHR && jqXHR.responseJSON ? jqXHR.responseJSON : null;
+        if (data && data.error) {
+            showDbError(data);
+        } else {
+            console.error("Failed to load markers");
+        }
         hideLoader();
     });
 
 
+}
+
+function showDbError(info) {
+    const message = info.message || 'Database error occurred';
+    const details = info.details ? `<div class="mt-1 small text-muted">${info.details}</div>` : '';
+    $('#db-error-overlay').remove();
+    $('#map').append(`
+        <div id="db-error-overlay" class="loader-overlay">
+            <div class="alert alert-danger mb-0 text-left" role="alert">
+                <strong>DB error:</strong> ${message}
+                ${details}
+            </div>
+        </div>
+    `);
+    hideLoader();
 }
 
 function createMarker(data) {
