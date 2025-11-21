@@ -1,5 +1,5 @@
 
-## Fail2SQL v2.0 by Amaury BOLLER
+## Fail2SQL v2.0
 ## From Fail2SQL v1.0 by Jordan Tomkinson <jordan@moodle.com>
 
 # Installation
