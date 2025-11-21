@@ -111,31 +111,25 @@ function loadmarkers() {
                 // Calculate color thresholds based on percentiles (dynamic distribution)
                 var countryCounts = [];
                 for(let i in countryCounter){
-                  countryCounts.push(countryCounter[i].count);
-                  if(countryCounter[i].count>maxPerCountry)maxPerCountry=countryCounter[i].count;
+                  var c = parseInt(countryCounter[i].count);
+                  countryCounts.push(c);
+                  if(c>maxPerCountry)maxPerCountry=c;
                 }
                 
                 // Sort counts in descending order
                 countryCounts.sort(function(a, b){return b - a});
-                
+                console.log(countryCounts);
                 // Calculate percentile thresholds for dynamic color distribution
                 if(countryCounts.length > 0){
-                  var p99 = countryCounts[Math.floor(countryCounts.length * 0.01)];  // Top 1%
-                  var p90 = countryCounts[Math.floor(countryCounts.length * 0.10)];  // Top 10%
-                  var p25 = countryCounts[Math.floor(countryCounts.length * 0.25)];  // Top 25%
-                  var p50 = countryCounts[Math.floor(countryCounts.length * 0.50)];  // Top 50% (median)
-                  var p75 = countryCounts[Math.floor(countryCounts.length * 0.75)];  // Top 75%
-                  var p90b = countryCounts[Math.floor(countryCounts.length * 0.90)]; // Top 90%
-                  var p99b = countryCounts[Math.floor(countryCounts.length * 0.99)]; // Top 99%
-                  
+                                    
                   colorThresholds = [
-                    p99,    // Top 1% - Très rouge foncé
-                    p90,    // Top 10% - Rouge foncé
-                    p25,    // Top 25% - Rouge
-                    p50,    // Top 50% - Orange-rouge
-                    p75,    // Top 75% - Orange
-                    p90b,   // Top 90% - Orange clair
-                    p99b,   // Top 99% - Jaune
+                    countryCounts[Math.floor(countryCounts.length * 0.01)],      // Top 1% - Très rouge foncé
+                    countryCounts[Math.floor(countryCounts.length * 0.10)],      // Top 10% - Rouge foncé
+                    countryCounts[Math.floor(countryCounts.length * 0.25)],      // Top 25% - Rouge
+                    countryCounts[Math.floor(countryCounts.length * 0.50)],      // Top 50% - Orange-rouge
+                    countryCounts[Math.floor(countryCounts.length * 0.75)],      // Top 75% - Orange
+                    countryCounts[Math.floor(countryCounts.length * 0.90)],      // Top 90% - Orange clair
+                    countryCounts[Math.floor(countryCounts.length * 0.99)],      // Top 99% - Jaune
                     1       // Rest (>=1 ban) - Jaune très clair
                   ];
                 }else{
@@ -248,21 +242,20 @@ function createMarker(data) {
 
 function getColor(d) {
     if(typeof(countryCounter[d]) != 'undefined'){
-      d=countryCounter[d].count;
+      d=parseInt(countryCounter[d].count);
     }else{
       d=0;
     }
     
-    // Distribution optimisée avec des seuils réels
-    return d >= colorThresholds[0] ? '#800026' :  // Top 5 (>8500) - Très rouge foncé
-           d >= colorThresholds[1] ? '#BD0026' :  // >1000 bans - Rouge foncé
-           d >= colorThresholds[2] ? '#E31A1C' :  // >500 bans - Rouge
-           d >= colorThresholds[3] ? '#FC4E2A' :  // >200 bans - Orange-rouge
-           d >= colorThresholds[4] ? '#FD8D3C' :  // >100 bans - Orange
-           d >= colorThresholds[5] ? '#FEB24C' :  // >50 bans - Orange clair
-           d >= colorThresholds[6] ? '#FED976' :  // >20 bans - Jaune
-           d >= colorThresholds[7] ? '#FFEDA0' :  // >=1 ban - Jaune très clair
-                      '#FFFFFF';                   // No bans - Blanc
+    return d >= colorThresholds[0] ? '#800026' :  
+           d >= colorThresholds[1] ? '#BD0026' :  
+           d >= colorThresholds[2] ? '#E31A1C' :  
+           d >= colorThresholds[3] ? '#FC4E2A' :  
+           d >= colorThresholds[4] ? '#FD8D3C' :  
+           d >= colorThresholds[5] ? '#FEB24C' :  
+           d >= colorThresholds[6] ? '#FED976' :  
+           d >= colorThresholds[7] ? '#FFEDA0' :  
+                      '#FFFFFF';                   // No bans - White
 }
 
 function style(feature) {
