@@ -84,7 +84,7 @@ function loadmarkers() {
 
         countryCounter=data['totalpercountry'];
         
-        // Calculate color thresholds based on actual country counts
+        // Calculate color thresholds based on percentiles (dynamic distribution)
         var countryCounts = [];
         for(let i in countryCounter){
           countryCounts.push(countryCounter[i].count);
@@ -94,31 +94,28 @@ function loadmarkers() {
         // Sort counts in descending order
         countryCounts.sort(function(a, b){return b - a});
         
-        // Distribution optimisée basée sur les données réelles:
-        // Top 5: >8500, Top 10: >5000, etc.
-        if(countryCounts.length >= 5){
+        // Calculate percentile thresholds for dynamic color distribution
+        if(countryCounts.length > 0){
+          var p99 = countryCounts[Math.floor(countryCounts.length * 0.01)];  // Top 1%
+          var p90 = countryCounts[Math.floor(countryCounts.length * 0.10)];  // Top 10%
+          var p25 = countryCounts[Math.floor(countryCounts.length * 0.25)];  // Top 25%
+          var p50 = countryCounts[Math.floor(countryCounts.length * 0.50)];  // Top 50% (median)
+          var p75 = countryCounts[Math.floor(countryCounts.length * 0.75)];  // Top 75%
+          var p90b = countryCounts[Math.floor(countryCounts.length * 0.90)]; // Top 90%
+          var p99b = countryCounts[Math.floor(countryCounts.length * 0.99)]; // Top 99%
+          
           colorThresholds = [
-            countryCounts[4],      // Top 5 (>8000) - Très rouge foncé
-            1000,                   // >1000 bans - Rouge foncé
-            500,                    // >500 bans - Rouge
-            200,                    // >200 bans - Orange-rouge
-            100,                    // >100 bans - Orange
-            50,                     // >50 bans - Orange clair
-            20,                     // >20 bans - Jaune
-            1                       // >=1 ban - Jaune très clair
+            p99,    // Top 1% - Très rouge foncé
+            p90,    // Top 10% - Rouge foncé
+            p25,    // Top 25% - Rouge
+            p50,    // Top 50% - Orange-rouge
+            p75,    // Top 75% - Orange
+            p90b,   // Top 90% - Orange clair
+            p99b,   // Top 99% - Jaune
+            1       // Rest (>=1 ban) - Jaune très clair
           ];
         }else{
-          // Fallback for fewer countries
-          colorThresholds = [
-            maxPerCountry * 0.8,
-            maxPerCountry * 0.5,
-            maxPerCountry * 0.3,
-            maxPerCountry * 0.2,
-            maxPerCountry * 0.1,
-            maxPerCountry * 0.05,
-            maxPerCountry * 0.01,
-            1
-          ];
+          colorThresholds = [maxPerCountry, maxPerCountry * 0.8, maxPerCountry * 0.6, maxPerCountry * 0.4, maxPerCountry * 0.2, maxPerCountry * 0.1, maxPerCountry * 0.01, 1];
         }
 
         $("#ipsblocked").html(" " + data['totalip'][0].count);
