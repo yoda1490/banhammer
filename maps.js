@@ -46,101 +46,130 @@ function updatex() {
 function loadmarkers() {
     showLoader();
     
-    // Charger les stats d'abord (plus rapide)
-    $.getJSON("get.php?action=stats", function(data) {
-        stats=data;
-	$('.stat ol').empty();
-        
-        // Optimisation: construire le HTML en une seule fois au lieu de multiples append
-        var top5Html = '';
-        var last5Html = '';
-        var lastipsHtml = '';
-        var protosHtml = '';
-        
-        for(var i = 0; i < data['totals'].length; i++) {
-            var j = data['totals'][i];
-            top5Html += "<li><img src='images/flags/" + j.code + ".png' alt='" + j.code + "' /> " + j.country + " (" + j.count + ")</li>";
-        }
-        
-        for(var i = 0; i < data['last'].length; i++) {
-            var j = data['last'][i];
-            last5Html += "<li title='" + j.timestamp + "'><img src='images/flags/" + j.code + ".png' alt='" + j.code + "' /> " + j.country + "</li>";
-        }
-        
-        for(var i = 0; i < data['lastips'].length; i++) {
-            var j = data['lastips'][i];
-            lastipsHtml += "<li title='" + j.country + " - " + j.timestamp + "'><img src='images/flags/" + j.code + ".png' alt='" + j.code + "' /> " + j.timestamp.split(' ')[1] + " <a href='#' onclick='whois(\"" + j.id + "\");return false;'>" + j.ip + "</a></li>";
-        }
-        
-        for(var i = 0; i < data['protos'].length; i++) {
-            var j = data['protos'][i];
-            protosHtml += "<li>" + j.name + " (" + j.count + ")</li>";
-        }
-        
-        $("#top5").html(top5Html);
-        $("#last5").html(last5Html);
-        $("#lastips").html(lastipsHtml);
-        $("#protocols").html(protosHtml);
-
-        countryCounter=data['totalpercountry'];
-        
-        // Calculate color thresholds based on percentiles (dynamic distribution)
-        var countryCounts = [];
-        for(let i in countryCounter){
-          countryCounts.push(countryCounter[i].count);
-          if(countryCounter[i].count>maxPerCountry)maxPerCountry=countryCounter[i].count;
-        }
-        
-        // Sort counts in descending order
-        countryCounts.sort(function(a, b){return b - a});
-        
-        // Calculate percentile thresholds for dynamic color distribution
-        if(countryCounts.length > 0){
-          var p99 = countryCounts[Math.floor(countryCounts.length * 0.01)];  // Top 1%
-          var p90 = countryCounts[Math.floor(countryCounts.length * 0.10)];  // Top 10%
-          var p25 = countryCounts[Math.floor(countryCounts.length * 0.25)];  // Top 25%
-          var p50 = countryCounts[Math.floor(countryCounts.length * 0.50)];  // Top 50% (median)
-          var p75 = countryCounts[Math.floor(countryCounts.length * 0.75)];  // Top 75%
-          var p90b = countryCounts[Math.floor(countryCounts.length * 0.90)]; // Top 90%
-          var p99b = countryCounts[Math.floor(countryCounts.length * 0.99)]; // Top 99%
-          
-          colorThresholds = [
-            p99,    // Top 1% - Très rouge foncé
-            p90,    // Top 10% - Rouge foncé
-            p25,    // Top 25% - Rouge
-            p50,    // Top 50% - Orange-rouge
-            p75,    // Top 75% - Orange
-            p90b,   // Top 90% - Orange clair
-            p99b,   // Top 99% - Jaune
-            1       // Rest (>=1 ban) - Jaune très clair
-          ];
-        }else{
-          colorThresholds = [maxPerCountry, maxPerCountry * 0.8, maxPerCountry * 0.6, maxPerCountry * 0.4, maxPerCountry * 0.2, maxPerCountry * 0.1, maxPerCountry * 0.01, 1];
-        }
-
-        $("#ipsblocked").html(" " + data['totalip'][0].count);
-        $("#ipsban").html(" " + data['ipban'][0].count);
-        $("#countriesclocked").html(" " + data['totalcountry'][0].count);
-
-        if(typeof(colorizedCountryLayer) == 'undefined'){
-            colorizedCountryLayer=L.geoJson(countryData, {style: style});
-            colorizedCountryLayer.addTo(map);
-            layerControl.addOverlay(colorizedCountryLayer, "Country colorization");
-        }else{
-            colorizedCountryLayer.addData(countryData, {style: style});
-        }
-        
-        // Charger les markers après les stats pour éviter le blocage
-        $.getJSON("get.php?action=markers", function(markerData) {
+    // STEP 1: Load markers FIRST for faster page display
+    $.getJSON("get.php?action=markers", function(markerData) {
+        if (markerData && Array.isArray(markerData)) {
             for (var i in markerData) {
                 createMarker(markerData[i]);
             }
+        }
+        
+        // STEP 2: Load stats AFTER markers (non-blocking)
+        $.getJSON("get.php?action=stats", function(data) {
+            // Safety checks for undefined data
+            if (!data) {
+                hideLoader();
+                return;
+            }
+            
+            stats = data;
+            $('.stat ol').empty();
+            
+            // Optimisation: construire le HTML en une seule fois au lieu de multiples append
+            var top5Html = '';
+            var last5Html = '';
+            var lastipsHtml = '';
+            var protosHtml = '';
+            
+            // Check arrays before processing
+            if (data['totals'] && Array.isArray(data['totals'])) {
+                for(var i = 0; i < data['totals'].length; i++) {
+                    var j = data['totals'][i];
+                    top5Html += "<li><img src='images/flags/" + j.code + ".png' alt='" + j.code + "' /> " + j.country + " (" + j.count + ")</li>";
+                }
+            }
+            
+            if (data['last'] && Array.isArray(data['last'])) {
+                for(var i = 0; i < data['last'].length; i++) {
+                    var j = data['last'][i];
+                    last5Html += "<li title='" + j.timestamp + "'><img src='images/flags/" + j.code + ".png' alt='" + j.code + "' /> " + j.country + "</li>";
+                }
+            }
+            
+            if (data['lastips'] && Array.isArray(data['lastips'])) {
+                for(var i = 0; i < data['lastips'].length; i++) {
+                    var j = data['lastips'][i];
+                    lastipsHtml += "<li title='" + j.country + " - " + j.timestamp + "'><img src='images/flags/" + j.code + ".png' alt='" + j.code + "' /> " + j.timestamp.split(' ')[1] + " <a href='#' onclick='whois(\"" + j.id + "\");return false;'>" + j.ip + "</a></li>";
+                }
+            }
+            
+            if (data['protos'] && Array.isArray(data['protos'])) {
+                for(var i = 0; i < data['protos'].length; i++) {
+                    var j = data['protos'][i];
+                    protosHtml += "<li>" + j.name + " (" + j.count + ")</li>";
+                }
+            }
+            
+            $("#top5").html(top5Html);
+            $("#last5").html(last5Html);
+            $("#lastips").html(lastipsHtml);
+            $("#protocols").html(protosHtml);
+
+            if (data['totalpercountry']) {
+                countryCounter = data['totalpercountry'];
+                
+                // Calculate color thresholds based on percentiles (dynamic distribution)
+                var countryCounts = [];
+                for(let i in countryCounter){
+                  countryCounts.push(countryCounter[i].count);
+                  if(countryCounter[i].count>maxPerCountry)maxPerCountry=countryCounter[i].count;
+                }
+                
+                // Sort counts in descending order
+                countryCounts.sort(function(a, b){return b - a});
+                
+                // Calculate percentile thresholds for dynamic color distribution
+                if(countryCounts.length > 0){
+                  var p99 = countryCounts[Math.floor(countryCounts.length * 0.01)];  // Top 1%
+                  var p90 = countryCounts[Math.floor(countryCounts.length * 0.10)];  // Top 10%
+                  var p25 = countryCounts[Math.floor(countryCounts.length * 0.25)];  // Top 25%
+                  var p50 = countryCounts[Math.floor(countryCounts.length * 0.50)];  // Top 50% (median)
+                  var p75 = countryCounts[Math.floor(countryCounts.length * 0.75)];  // Top 75%
+                  var p90b = countryCounts[Math.floor(countryCounts.length * 0.90)]; // Top 90%
+                  var p99b = countryCounts[Math.floor(countryCounts.length * 0.99)]; // Top 99%
+                  
+                  colorThresholds = [
+                    p99,    // Top 1% - Très rouge foncé
+                    p90,    // Top 10% - Rouge foncé
+                    p25,    // Top 25% - Rouge
+                    p50,    // Top 50% - Orange-rouge
+                    p75,    // Top 75% - Orange
+                    p90b,   // Top 90% - Orange clair
+                    p99b,   // Top 99% - Jaune
+                    1       // Rest (>=1 ban) - Jaune très clair
+                  ];
+                }else{
+                  colorThresholds = [maxPerCountry, maxPerCountry * 0.8, maxPerCountry * 0.6, maxPerCountry * 0.4, maxPerCountry * 0.2, maxPerCountry * 0.1, maxPerCountry * 0.01, 1];
+                }
+            }
+
+            if (data['totalip'] && data['totalip'][0]) {
+                $("#ipsblocked").html(" " + data['totalip'][0].count);
+            }
+            if (data['ipban'] && data['ipban'][0]) {
+                $("#ipsban").html(" " + data['ipban'][0].count);
+            }
+            if (data['totalcountry'] && data['totalcountry'][0]) {
+                $("#countriesclocked").html(" " + data['totalcountry'][0].count);
+            }
+
+            if(typeof(colorizedCountryLayer) == 'undefined'){
+                colorizedCountryLayer=L.geoJson(countryData, {style: style});
+                colorizedCountryLayer.addTo(map);
+                layerControl.addOverlay(colorizedCountryLayer, "Country colorization");
+            }else{
+                colorizedCountryLayer.addData(countryData, {style: style});
+            }
+            
             hideLoader();
+
         }).fail(function() {
+            console.warn("Stats loading failed, but markers are displayed");
             hideLoader();
         });
 
     }).fail(function() {
+        console.error("Failed to load markers");
         hideLoader();
     });
 
