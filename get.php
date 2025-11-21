@@ -22,11 +22,15 @@ function get_stats_cached(){
     
     // Check if cache exists in DB
     $cache = getdataset("SELECT stats_json, last_id_processed FROM banhammer_stats WHERE id=1");
-    if(!empty($cache)){
-        return json_decode($cache[0]['stats_json'], true);
+    if(!empty($cache) && !empty($cache[0]['stats_json'])){
+        $decoded = json_decode($cache[0]['stats_json'], true);
+        // If cache is not empty JSON, return it
+        if(!empty($decoded)){
+            return $decoded;
+        }
     }
     
-    // Rebuild full stats if cache doesn't exist
+    // Rebuild full stats if cache doesn't exist or is empty
     return rebuild_stats();
 }
 
@@ -34,17 +38,30 @@ function rebuild_stats(){
     global $table, $link;
     
     $xx = array();
+    $xx['totalip'] = array();
+    $xx['ipban'] = array();
+    $xx['totalcountry'] = array();
+    $xx['totalpercountry'] = array();
+    $xx['protos'] = array();
+    $xx['totals'] = array();
+    $xx['last'] = array();
+    $xx['lastips'] = array();
+    
     // Aggregate counts in a single query
     $agg = getdataset("SELECT 
         COUNT(DISTINCT ip) AS totalip,
         COUNT(DISTINCT CASE WHEN ban=1 THEN ip END) AS ipban,
         COUNT(DISTINCT country) AS totalcountry
         FROM $table");
-    $xx['totalip']      = array(array('count' => $agg[0]['totalip']));
-    $xx['ipban']        = array(array('count' => $agg[0]['ipban']));
-    $xx['totalcountry'] = array(array('count' => $agg[0]['totalcountry']));
+    
+    if(!empty($agg)) {
+        $xx['totalip']      = array(array('count' => $agg[0]['totalip']));
+        $xx['ipban']        = array(array('count' => $agg[0]['ipban']));
+        $xx['totalcountry'] = array(array('count' => $agg[0]['totalcountry']));
+    }
 
-    foreach(getdataset("SELECT code3, country, code, COUNT(id) AS count FROM $table GROUP BY country") as $c){
+    $perCountry = getdataset("SELECT code3, country, code, COUNT(id) AS count FROM $table GROUP BY country");
+    foreach($perCountry as $c){
         $xx['totalpercountry'][$c['code3']] = $c;
     }
 
@@ -55,7 +72,7 @@ function rebuild_stats(){
 
     // Get max ID for incremental updates
     $maxId = getdataset("SELECT MAX(id) as max_id FROM $table");
-    $lastId = $maxId[0]['max_id'] ?? 0;
+    $lastId = (!empty($maxId) && isset($maxId[0]['max_id'])) ? $maxId[0]['max_id'] : 0;
     
     // Store in DB cache (upsert)
     $statsJson = json_encode($xx);
