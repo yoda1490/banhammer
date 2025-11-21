@@ -124,12 +124,12 @@ function loadmarkers() {
                                     
                   colorThresholds = [
                     countryCounts[Math.floor(countryCounts.length * 0.01)],      // Top 1% - Très rouge foncé
-                    countryCounts[Math.floor(countryCounts.length * 0.10)],      // Top 10% - Rouge foncé
-                    countryCounts[Math.floor(countryCounts.length * 0.25)],      // Top 25% - Rouge
-                    countryCounts[Math.floor(countryCounts.length * 0.50)],      // Top 50% - Orange-rouge
-                    countryCounts[Math.floor(countryCounts.length * 0.75)],      // Top 75% - Orange
-                    countryCounts[Math.floor(countryCounts.length * 0.90)],      // Top 90% - Orange clair
-                    countryCounts[Math.floor(countryCounts.length * 0.99)],      // Top 99% - Jaune
+                    countryCounts[Math.floor(countryCounts.length * 0.05)],      // Top XX% - Rouge foncé
+                    countryCounts[Math.floor(countryCounts.length * 0.10)],      // Top XX% - Rouge
+                    countryCounts[Math.floor(countryCounts.length * 0.30)],      // Top XX% - Orange-rouge
+                    countryCounts[Math.floor(countryCounts.length * 0.50)],      // Top XX% - Orange
+                    countryCounts[Math.floor(countryCounts.length * 0.75)],      // Top XX% - Orange clair
+                    countryCounts[Math.floor(countryCounts.length * 0.99)],      // Top XX% - Jaune
                     1       // Rest (>=1 ban) - Jaune très clair
                   ];
                 }else{
@@ -344,8 +344,8 @@ $(document).ready(function() {
         osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             minZoom: 2,
-            worldCopyJump: false, // prevent world repetition
-            noWrap: true,         // prevent world repetition
+            worldCopyJump: true, // enable horizontal infinite scrolling
+            noWrap: false,         // prevent world repetition
             attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
         })
 
