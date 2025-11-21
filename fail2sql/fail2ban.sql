@@ -42,21 +42,20 @@ CREATE TABLE `fail2ban` (
   KEY `idx_name` (`name`(100))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Index pour les tables déchargées
---
+-- --------------------------------------------------------
 
 --
--- Index pour la table `fail2ban`
+-- Structure de la table `banhammer_stats`
 --
 
---
--- AUTO_INCREMENT pour les tables déchargées
---
+CREATE TABLE `banhammer_stats` (
+  `id` INT PRIMARY KEY,
+  `stats_json` LONGTEXT COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_id_processed` INT NOT NULL DEFAULT 0 COMMENT 'Last fail2ban ID included in stats',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- AUTO_INCREMENT pour la table `fail2ban`
---
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -18,15 +18,21 @@ if(isset($link)) { mysqli_set_charset($link, 'utf8mb4'); }
  
 
 function get_stats_cached(){
-    global $table;
-    $cacheFile = __DIR__ . '/stats_cache.json';
-    $cacheTTL  = 30; // seconds
-    if(file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTTL)){
-        $raw = file_get_contents($cacheFile);
-        $decoded = json_decode($raw, true);
-        if(is_array($decoded)) { return $decoded; }
+    global $table, $link;
+    
+    // Check if cache exists in DB
+    $cache = getdataset("SELECT stats_json, last_id_processed FROM banhammer_stats WHERE id=1");
+    if(!empty($cache)){
+        return json_decode($cache[0]['stats_json'], true);
     }
+    
+    // Rebuild full stats if cache doesn't exist
+    return rebuild_stats();
+}
 
+function rebuild_stats(){
+    global $table, $link;
+    
     $xx = array();
     // Aggregate counts in a single query
     $agg = getdataset("SELECT 
@@ -47,8 +53,17 @@ function get_stats_cached(){
     $xx['last']   = getdataset("SELECT code, country, MAX(`timestamp`) AS `timestamp` FROM $table GROUP BY country ORDER BY timestamp DESC LIMIT 5");
     $xx['lastips']= getdataset("SELECT ip, code, country, `timestamp`, id FROM $table ORDER BY timestamp DESC LIMIT 30");
 
-    // Write cache (atomic)
-    file_put_contents($cacheFile, json_encode($xx));
+    // Get max ID for incremental updates
+    $maxId = getdataset("SELECT MAX(id) as max_id FROM $table");
+    $lastId = $maxId[0]['max_id'] ?? 0;
+    
+    // Store in DB cache (upsert)
+    $statsJson = json_encode($xx);
+    $query = "INSERT INTO banhammer_stats (id, stats_json, last_id_processed, updated_at) 
+              VALUES (1, '" . mysqli_real_escape_string($link, $statsJson) . "', " . intval($lastId) . ", NOW())
+              ON DUPLICATE KEY UPDATE stats_json=VALUES(stats_json), last_id_processed=VALUES(last_id_processed), updated_at=NOW()";
+    mysqli_query($link, $query);
+    
     return $xx;
 }
 
