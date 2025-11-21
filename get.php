@@ -34,7 +34,7 @@ function get_stats_cached(){
     return rebuild_stats();
 }
 
-function rebuild_stats(){
+function rebuild_stats($incremental = true){
     global $table, $link;
     
     $xx = array();
@@ -47,12 +47,31 @@ function rebuild_stats(){
     $xx['last'] = array();
     $xx['lastips'] = array();
     
+    $whereClause = "";
+    $lastIdProcessed = 0;
+    $previousStats = array();
+    
+    // If incremental, only get new records since last_id_processed
+    if($incremental){
+        $cache = getdataset("SELECT last_id_processed, stats_json FROM banhammer_stats WHERE id=1");
+        if(!empty($cache) && isset($cache[0]['last_id_processed'])){
+            $lastIdProcessed = intval($cache[0]['last_id_processed']);
+            // Load previous stats for merging
+            if(!empty($cache[0]['stats_json'])){
+                $previousStats = json_decode($cache[0]['stats_json'], true);
+            }
+            if($lastIdProcessed > 0){
+                $whereClause = " WHERE id > " . $lastIdProcessed;
+            }
+        }
+    }
+    
     // Aggregate counts in a single query
     $agg = getdataset("SELECT 
         COUNT(DISTINCT ip) AS totalip,
         COUNT(DISTINCT CASE WHEN ban=1 THEN ip END) AS ipban,
         COUNT(DISTINCT country) AS totalcountry
-        FROM $table");
+        FROM $table" . $whereClause);
     
     if(!empty($agg)) {
         $xx['totalip']      = array(array('count' => $agg[0]['totalip']));
@@ -60,13 +79,60 @@ function rebuild_stats(){
         $xx['totalcountry'] = array(array('count' => $agg[0]['totalcountry']));
     }
 
-    $perCountry = getdataset("SELECT code3, country, code, COUNT(id) AS count FROM $table GROUP BY country");
-    foreach($perCountry as $c){
-        $xx['totalpercountry'][$c['code3']] = $c;
+    // In incremental mode, merge with previous stats for per-country, protos, and totals
+    $perCountry = getdataset("SELECT code3, country, code, COUNT(id) AS count FROM $table" . $whereClause . " GROUP BY country");
+    
+    if($incremental && !empty($previousStats['totalpercountry'])){
+        // Start with previous stats
+        $xx['totalpercountry'] = $previousStats['totalpercountry'];
+        // Add new counts to existing countries
+        foreach($perCountry as $c){
+            if(isset($xx['totalpercountry'][$c['code3']])){
+                $xx['totalpercountry'][$c['code3']]['count'] += $c['count'];
+            } else {
+                $xx['totalpercountry'][$c['code3']] = $c;
+            }
+        }
+    } else {
+        // Full rebuild: use only new results
+        foreach($perCountry as $c){
+            $xx['totalpercountry'][$c['code3']] = $c;
+        }
     }
 
-    $xx['protos'] = getdataset("SELECT name, COUNT(name) AS count FROM $table GROUP BY name");
-    $xx['totals'] = getdataset("SELECT code, country, COUNT(*) AS count FROM $table GROUP BY country ORDER BY count DESC LIMIT 5");
+    // Get new protocol counts
+    $newProtos = getdataset("SELECT name, COUNT(name) AS count FROM $table" . $whereClause . " GROUP BY name");
+    if($incremental && !empty($previousStats['protos'])){
+        // Start with previous stats
+        $xx['protos'] = $previousStats['protos'];
+        // Merge new proto counts
+        foreach($newProtos as $proto){
+            $found = false;
+            foreach($xx['protos'] as &$p){
+                if($p['name'] == $proto['name']){
+                    $p['count'] += $proto['count'];
+                    $found = true;
+                    break;
+                }
+            }
+            if(!$found){
+                $xx['protos'][] = $proto;
+            }
+        }
+    } else {
+        $xx['protos'] = $newProtos;
+    }
+
+    // Get new top 5 countries (will be recalculated from totalpercountry)
+    $totalsArray = array();
+    foreach($xx['totalpercountry'] as $country){
+        $totalsArray[] = $country;
+    }
+    // Sort by count descending and take top 5
+    usort($totalsArray, function($a, $b) { return $b['count'] - $a['count']; });
+    $xx['totals'] = array_slice($totalsArray, 0, 5);
+
+    // Always get latest 5 countries by timestamp and latest 30 IPs (not cumulative)
     $xx['last']   = getdataset("SELECT code, country, MAX(`timestamp`) AS `timestamp` FROM $table GROUP BY country ORDER BY timestamp DESC LIMIT 5");
     $xx['lastips']= getdataset("SELECT ip, code, country, `timestamp`, id FROM $table ORDER BY timestamp DESC LIMIT 30");
 
@@ -143,6 +209,9 @@ if(isset($_GET['action']) && $_GET['action'] == 'markers'){
     $return = get_markers();
 }elseif(isset($_GET['action']) && $_GET['action'] == 'stats'){
     $return = get_stats_cached();
+}elseif(isset($_GET['action']) && $_GET['action'] == 'stats-full'){
+    // Force full regeneration of stats (not incremental)
+    $return = rebuild_stats(false);
 }elseif(isset($_GET['action']) && $_GET['action'] == 'whois'){
     $return=get_banned_whois();
 }else{
