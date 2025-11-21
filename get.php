@@ -1,6 +1,6 @@
 <?php
 #SECURITY
-header("Access-Control-Allow-Origin: ".$webServer);
+header("Access-Control-Allow-Origin: ".(getenv('WEB_SERVER') ?: '*'));
 header("Strict-Transport-Security: max-age = 63072000; includeSubDomains; preload");
 header("X-Frame-Options: NEVER");
 header("X-Content-Type-Options: nosniff");
