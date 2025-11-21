@@ -6,28 +6,30 @@ $db_pwd = getenv('DB_PASSWORD') ?: 'fail2ban';
 $database = getenv('DB_NAME') ?: 'fail2ban';
 $table = getenv('DB_TABLE') ?: 'fail2ban';
 
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
 // Opens a connection to a MySQL server
-$link = @mysqli_connect($db_host, $db_user, $db_pwd);
-if (!$link) {
-    header('Content-Type: application/json');
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'DB_CONNECT',
-        'message' => 'Database connection failed',
-        'details' => mysqli_connect_error()
-    ]);
-    exit;
+try {
+    $link = mysqli_connect($db_host, $db_user, $db_pwd);
+} catch (mysqli_sql_exception $e) {
+    outputDbError('DB_CONNECT', 'Database connection failed', $e->getMessage());
 }
 
 // Set the active MySQL database
-$db_selected = @mysqli_select_db($link, $database);
-if (!$db_selected) {
+try {
+    mysqli_select_db($link, $database);
+} catch (mysqli_sql_exception $e) {
+    outputDbError('DB_SELECT', 'Database selection failed', $e->getMessage());
+}
+
+function outputDbError($code, $message, $details)
+{
     header('Content-Type: application/json');
     http_response_code(500);
     echo json_encode([
-        'error' => 'DB_SELECT',
-        'message' => 'Database selection failed',
-        'details' => mysqli_error($link)
+        'error' => $code,
+        'message' => $message,
+        'details' => $details,
     ]);
     exit;
 }
