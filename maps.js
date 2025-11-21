@@ -280,10 +280,55 @@ function style(feature) {
 
 //give an id in the table and retourne the ip whois corresponding
 function whois(id){
+    $('#whois .modal-body').html('<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div><p class="mt-2">Fetching WHOIS and Ban History...</p></div>');
+    $('#whois').modal('show');
+    
     $.getJSON("get.php?action=whois&ip="+id, function(data) {
-        $('#whois .modal-body').html(data.whois);
-        $('#whois .modal-title').html(data.ip)
-        $('#whois').modal('show');
+        if(data.exit_code && data.exit_code > 0) {
+            $('#whois .modal-body').html('<div class="alert alert-danger">' + data.message + '</div>');
+            return;
+        }
+
+        $('#whois .modal-title').html(data.ip + ' <span class="badge badge-danger ml-2">' + data.total_bans + ' bans</span>');
+        
+        var historyHtml = '<div class="table-responsive"><table class="table table-striped table-hover table-sm"><thead><tr><th>Date</th><th>Jail</th><th>Protocol</th><th>Ports</th><th>Location</th><th>Status</th></tr></thead><tbody>';
+        
+        if(data.history && data.history.length > 0){
+            for(var i=0; i<data.history.length; i++){
+                var h = data.history[i];
+                var status = h.ban == 1 ? '<span class="badge badge-danger">Banned</span>' : '<span class="badge badge-success">Released</span>';
+                var location = (h.city ? h.city + ', ' : '') + (h.country || '');
+                historyHtml += '<tr><td>' + h.timestamp + '</td><td>' + h.name + '</td><td>' + (h.protocol || '-') + '</td><td>' + (h.ports || '-') + '</td><td>' + location + '</td><td>' + status + '</td></tr>';
+            }
+        } else {
+            historyHtml += '<tr><td colspan="6" class="text-center">No history found</td></tr>';
+        }
+        historyHtml += '</tbody></table></div>';
+        
+        var whoisContent = data.whois ? data.whois : 'No WHOIS data available';
+        
+        var tabsHtml = `
+            <ul class="nav nav-tabs" id="whoisTab" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" id="history-tab" data-toggle="tab" href="#history" role="tab" aria-controls="history" aria-selected="true">Ban History</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="raw-tab" data-toggle="tab" href="#raw" role="tab" aria-controls="raw" aria-selected="false">WHOIS Data</a>
+              </li>
+            </ul>
+            <div class="tab-content" id="whoisTabContent">
+              <div class="tab-pane fade show active p-3" id="history" role="tabpanel" aria-labelledby="history-tab">
+                ${historyHtml}
+              </div>
+              <div class="tab-pane fade p-3" id="raw" role="tabpanel" aria-labelledby="raw-tab">
+                <pre class="bg-light p-3 border rounded" style="max-height: 500px; overflow-y: auto; font-size: 0.85rem;">${whoisContent}</pre>
+              </div>
+            </div>
+        `;
+        
+        $('#whois .modal-body').html(tabsHtml);
+    }).fail(function() {
+        $('#whois .modal-body').html('<div class="alert alert-danger">Failed to load data.</div>');
     });
 }
 

@@ -186,7 +186,7 @@ function getdataset($query)
 
 //retrieve IP in table to prevent any whois query from this service
 function get_banned_whois(){
-    global $table;
+    global $table, $link;
     if(isset($_GET['ip']) && is_numeric($_GET['ip']) && intval($_GET['ip']) > 0 ){
         $query='SELECT ip FROM '.$table.' WHERE `id`='.intval($_GET['ip']);
         $data=getdataset($query);
@@ -195,7 +195,20 @@ function get_banned_whois(){
         }else{
             require_once('lib/whois.php');
             $ip=$data[0]['ip'];
-            return ['ip'=> $ip, 'whois'=>get_whois($ip)];
+            
+            // Get ban history for this IP
+            $history_query = "SELECT id, name, protocol, ports, timestamp, ban, country, city 
+                              FROM $table 
+                              WHERE ip = '" . mysqli_real_escape_string($link, $ip) . "' 
+                              ORDER BY timestamp DESC";
+            $history = getdataset($history_query);
+            
+            return [
+                'ip'=> $ip, 
+                'whois'=> get_whois($ip),
+                'history' => $history,
+                'total_bans' => count($history)
+            ];
         }
         
     }else{
