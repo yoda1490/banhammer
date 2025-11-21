@@ -1,0 +1,16 @@
+.git
+.gitignore
+.github
+README.md
+DOCKER.md
+LICENSE
+.dockerignore
+Dockerfile
+docker-compose.yml
+.env
+*.log
+node_modules
+.DS_Store
+*.swp
+*.swo
+*~

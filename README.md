@@ -69,13 +69,26 @@ The country colors adapt based on actual attack data
 
 ## 📥 Installation
 
-### 1. Deploy Code
+### Quick Start with Docker (Recommended)
+
+The easiest way to run BanHammer is with Docker and Docker Compose. **See [DOCKER.md](DOCKER.md) for detailed Docker instructions.**
+
+**One-line startup:**
+```bash
+docker-compose up -d
+```
+
+This starts both the web server and database with all required configurations.
+
+### Traditional Installation
+
+#### 1. Deploy Code
 ```bash
 git clone https://github.com/yoda1490/banhammer.git /var/www/banhammer
 cd /var/www/banhammer
 ```
 
-### 2. Configure Database
+#### 2. Configure Database
 
 Copy and edit configuration:
 ```bash
@@ -92,12 +105,79 @@ $database = 'fail2ban';
 $table = 'fail2ban';
 ```
 
-### 3. Initialize Database
+#### 3. Initialize Database
 
 Create MySQL database:
 ```bash
 mysql -u root -p
 CREATE DATABASE fail2ban;
+CREATE USER 'fail2ban'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON fail2ban.* TO 'fail2ban'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+Import schema:
+```bash
+mysql -u fail2ban -p fail2ban < fail2sql/fail2ban.sql
+mysql -u fail2ban -p fail2ban < fail2sql/upgrade-stats.sql
+```
+
+#### 4. Web Server Configuration
+
+Configure Apache virtual host:
+```apache
+<VirtualHost *:80>
+    ServerName ban.example.com
+    DocumentRoot /var/www/banhammer
+    
+    <Directory /var/www/banhammer>
+        AllowOverride All
+        Require all granted
+    </Directory>
+    
+    ErrorLog ${APACHE_LOG_DIR}/banhammer-error.log
+    CustomLog ${APACHE_LOG_DIR}/banhammer-access.log combined
+</VirtualHost>
+```
+
+Enable mod_rewrite:
+```bash
+a2enmod rewrite
+systemctl restart apache2
+```
+
+#### 5. File Permissions
+```bash
+chown -R www-data:www-data /var/www/banhammer
+chmod -R 755 /var/www/banhammer
+```
+
+#### 6. Populate with Fail2Ban Data
+
+Run the fail2sql integration script:
+```bash
+cd /var/www/banhammer/fail2sql
+python3 fail2sql -d fail2ban -u fail2ban -p your_password
+```
+
+Or copy from fail2ban's own database:
+```bash
+mysql -u fail2ban -p fail2ban < /var/log/fail2ban/fail2ban.sql
+```
+
+#### 7. Verify Installation
+
+Open in browser:
+```
+http://ban.example.com
+```
+
+Check data is loading:
+```bash
+curl http://localhost/get.php?action=stats | jq .
+curl http://localhost/get.php?action=markers | jq .
+```
 CREATE USER 'fail2ban'@'localhost' IDENTIFIED BY 'your_password';
 GRANT INSERT, UPDATE, DELETE, SELECT ON fail2ban.* TO 'fail2ban'@'localhost';
 FLUSH PRIVILEGES;
@@ -118,17 +198,51 @@ Key steps:
 - Download GeoIP database: `./fail2sql/fail2sql -u`
 - Test with: `./fail2sql/fail2sql -l`
 
-### 5. Web Server Configuration
+## 🐳 Docker Deployment
 
-Set proper permissions:
+BanHammer includes full Docker support for easy containerized deployment.
+
+### Docker Compose (Recommended)
+
+Start with a single command:
 ```bash
-chown -R www-data:www-data /var/www/banhammer
-chmod 755 /var/www/banhammer
+docker-compose up -d
 ```
 
-Ensure `get.php` is accessible via web server.
+This creates:
+- **banhammer-web** - PHP/Apache web server
+- **banhammer-db** - MariaDB database
+- **banhammer-network** - Isolated Docker network
 
-## 🚀 Optimization (Optional)
+### Environment Variables
+
+Configure via `.env` file or directly:
+```bash
+DB_USER=fail2ban
+DB_PASSWORD=secure_password
+DB_NAME=fail2ban
+WEB_SERVER=ban.example.com  # Set to your domain for production
+WEB_PORT=80
+```
+
+### Docker Build Only
+
+```bash
+# Build image
+docker build -t banhammer:latest .
+
+# Run with existing database
+docker run -d \
+  -p 80:80 \
+  -e DB_HOST=db.example.com \
+  -e DB_USER=fail2ban \
+  -e DB_PASSWORD=password \
+  banhammer:latest
+```
+
+**For full Docker documentation, see [DOCKER.md](DOCKER.md).**
+
+## 🚀 Performance Optimization
 
 ### Database Schema Upgrade
 
@@ -137,9 +251,16 @@ For existing installations, apply performance indexes:
 mysql -u fail2ban -p fail2ban < fail2sql/upgrade.sql
 ```
 
+### Stats Caching
+
+Statistics are cached in the `banhammer_stats` table with automatic incremental updates every 5 minutes.
+
+Force a full cache refresh:
+```bash
+curl http://localhost/get.php?action=stats-full
+```
 
 
-## 📡 API Endpoints
 
 All endpoints return JSON.
 

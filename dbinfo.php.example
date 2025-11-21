@@ -1,19 +1,27 @@
 <?php
-$db_host = 'localhost';
-$db_user = 'fail2ban';
-$db_pwd = 'XXXX';
-
-$database = 'XXXX';
-$table = 'fail2ban';
+// Read configuration from environment variables or use defaults
+$db_host = getenv('DB_HOST') ?: 'localhost';
+$db_user = getenv('DB_USER') ?: 'fail2ban';
+$db_pwd = getenv('DB_PASSWORD') ?: 'fail2ban';
+$database = getenv('DB_NAME') ?: 'fail2ban';
+$table = getenv('DB_TABLE') ?: 'fail2ban';
+$webServer = getenv('WEB_SERVER') ?: '*';
 
 // Opens a connection to a MySQL server
-$link=mysqli_connect ($db_host, $db_user, $db_pwd);
-if (!$link) {  die('Not connected : ' . mysqli_error($connection));}
+$link = mysqli_connect($db_host, $db_user, $db_pwd);
+if (!$link) {
+    die('Not connected : ' . mysqli_error($link));
+}
 
 // Set the active MySQL database
-$db_selected = mysqli_select_db($link,$database);
+$db_selected = mysqli_select_db($link, $database);
 if (!$db_selected) {
-  die ('Can\'t use db : ' . mysqli_error($link));
+    die('Can\'t use db : ' . mysqli_error($link));
+}
+
+// Set the webServer variable for CORS headers (used in get.php)
+if (!isset($webServer)) {
+    $webServer = getenv('WEB_SERVER') ?: '*';
 }
 
 ?>
