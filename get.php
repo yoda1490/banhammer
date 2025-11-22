@@ -21,6 +21,7 @@ function get_stats_cached(){
     global $table, $link;
     
     // Check if cache exists in DB
+    build_stats(true);
     $cache = getdataset("SELECT stats_json, last_id_processed FROM banhammer_stats WHERE id=1");
     if(!empty($cache) && !empty($cache[0]['stats_json'])){
         $decoded = json_decode($cache[0]['stats_json'], true);
@@ -29,12 +30,9 @@ function get_stats_cached(){
             return $decoded;
         }
     }
-    
-    // Rebuild full stats if cache doesn't exist or is empty
-    return rebuild_stats();
 }
 
-function rebuild_stats($incremental = true){
+function build_stats($incremental = true){
     global $table, $link;
     
     $xx = array();
@@ -224,7 +222,7 @@ if(isset($_GET['action']) && $_GET['action'] == 'markers'){
     $return = get_stats_cached();
 }elseif(isset($_GET['action']) && $_GET['action'] == 'stats-full'){
     // Force full regeneration of stats (not incremental)
-    $return = rebuild_stats(false);
+    $return = build_stats(false);
 }elseif(isset($_GET['action']) && $_GET['action'] == 'whois'){
     $return=get_banned_whois();
 }else{
