@@ -72,9 +72,19 @@ function build_stats($incremental = true){
         FROM $table" . $whereClause);
     
     if(!empty($agg)) {
-        $xx['totalip']      = array(array('count' => $agg[0]['totalip']));
-        $xx['ipban']        = array(array('count' => $agg[0]['ipban']));
-        $xx['totalcountry'] = array(array('count' => $agg[0]['totalcountry']));
+        $totalip = $agg[0]['totalip'];
+        $ipban = $agg[0]['ipban'];
+        $totalcountry = $agg[0]['totalcountry'];
+
+        if($incremental && !empty($previousStats)) {
+            if(isset($previousStats['totalip'][0]['count'])) $totalip += $previousStats['totalip'][0]['count'];
+            if(isset($previousStats['ipban'][0]['count'])) $ipban += $previousStats['ipban'][0]['count'];
+            if(isset($previousStats['totalcountry'][0]['count'])) $totalcountry += $previousStats['totalcountry'][0]['count'];
+        }
+
+        $xx['totalip']      = array(array('count' => $totalip));
+        $xx['ipban']        = array(array('count' => $ipban));
+        $xx['totalcountry'] = array(array('count' => $totalcountry));
     }
 
     // In incremental mode, merge with previous stats for per-country, protos, and totals
