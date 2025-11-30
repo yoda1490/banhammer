@@ -3,39 +3,10 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/dbinfo.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    respondJson(405, ['error' => 'METHOD_NOT_ALLOWED', 'message' => 'Only POST is supported']);
-}
+ensurePostOnly();
 
-$authHeader = getAuthorizationHeader();
-if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-    // Debug: dump all server vars to find the header
-    $allServerKeys = array_filter(array_keys($_SERVER), function($key) {
-        return stripos($key, 'auth') !== false || stripos($key, 'http_') === 0;
-    });
-    $serverVars = [];
-    foreach ($allServerKeys as $key) {
-        $serverVars[$key] = $_SERVER[$key];
-    }
-    
-    respondJson(401, [
-        'error' => 'UNAUTHORIZED', 
-        'message' => 'Missing or invalid bearer token', 
-        'debug' => [
-            'authHeader' => $authHeader ?: 'null',
-            'apache_request_headers_exists' => function_exists('apache_request_headers'),
-            'relevant_server_vars' => $serverVars
-        ]
-    ]);
-}
-
-$token = trim($matches[1]);
-if ($token === '') {
-    respondJson(401, ['error' => 'UNAUTHORIZED', 'message' => 'Empty bearer token']);
-}
-
-$tokenHash = hash('sha256', $token);
-$account = fetchAccount($tokenHash, $link);
+$token = extractBearerToken();
+$account = fetchAccount(hash('sha256', $token), $link);
 if (!$account) {
     respondJson(401, ['error' => 'UNAUTHORIZED', 'message' => 'Invalid bearer token']);
 }
@@ -44,32 +15,22 @@ $payload = getPayload();
 $action = strtolower(trim($_GET['action'] ?? ($payload['action'] ?? 'ban')));
 $result = null;
 
-switch ($action) {
-    case 'ban':
-        $result = handleBan($payload, $account, $link, $table);
-        break;
-    case 'unban':
-        $result = handleUnban($payload, $link, $table);
-        break;
-    case 'flush':
-        $result = handleFlush($link, $table);
-        break;
-    case 'start':
-        $result = handleGeoUpdate(false);
-        break;
-    case 'stop':
-        $result = handleGeoUpdate(true);
-        break;
-    default:
-        $result = [
-            'code' => 400,
-            'payload' => [
-                'error' => 'INVALID_ACTION',
-                'message' => 'Supported actions: ban, unban, flush, start, stop'
-            ]
-        ];
-        break;
+$handlers = [
+    'ban'   => fn () => handleBan($payload, $account, $link, $table),
+    'unban' => fn () => handleUnban($payload, $link, $table),
+    'flush' => fn () => handleFlush($link, $table),
+    'start' => fn () => handleGeoUpdate(false),
+    'stop'  => fn () => handleGeoUpdate(true),
+];
+
+if (!isset($handlers[$action])) {
+    respondJson(400, [
+        'error' => 'INVALID_ACTION',
+        'message' => 'Supported actions: ban, unban, flush, start, stop'
+    ]);
 }
+
+$result = $handlers[$action]();
 
 if (isset($link) && $link) {
     mysqli_close($link);
@@ -248,38 +209,51 @@ function handleGeoUpdate($force = false)
 
 function getAuthorizationHeader()
 {
-    // Try apache_request_headers first (works without .htaccess)
+    $candidates = [];
+
     if (function_exists('apache_request_headers')) {
-        $headers = apache_request_headers();
-        if (isset($headers['Authorization'])) {
-            return $headers['Authorization'];
-        }
-        if (isset($headers['authorization'])) {
-            return $headers['authorization'];
-        }
+        $apacheHeaders = apache_request_headers();
+        $candidates[] = $apacheHeaders['Authorization'] ?? $apacheHeaders['authorization'] ?? null;
     }
 
-    // Try Apache-style REDIRECT_ prefix
-    if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-        return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
-    }
+    $candidates[] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null;
 
-    // Try getallheaders as fallback
     if (function_exists('getallheaders')) {
         $headers = getallheaders();
-        if (isset($headers['Authorization'])) {
-            return $headers['Authorization'];
-        }
-        if (isset($headers['authorization'])) {
-            return $headers['authorization'];
-        }
+        $candidates[] = $headers['Authorization'] ?? $headers['authorization'] ?? null;
     }
 
-    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-        return $_SERVER['HTTP_AUTHORIZATION'];
+    $candidates[] = $_SERVER['HTTP_AUTHORIZATION'] ?? null;
+
+    foreach ($candidates as $value) {
+        if ($value) {
+            return $value;
+        }
     }
 
     return null;
+}
+
+function extractBearerToken()
+{
+    $authHeader = getAuthorizationHeader();
+    if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+        respondJson(401, ['error' => 'UNAUTHORIZED', 'message' => 'Missing or invalid bearer token']);
+    }
+
+    $token = trim($matches[1]);
+    if ($token === '') {
+        respondJson(401, ['error' => 'UNAUTHORIZED', 'message' => 'Empty bearer token']);
+    }
+
+    return $token;
+}
+
+function ensurePostOnly()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        respondJson(405, ['error' => 'METHOD_NOT_ALLOWED', 'message' => 'Only POST is supported']);
+    }
 }
 
 function fetchAccount($tokenHash, $link)
