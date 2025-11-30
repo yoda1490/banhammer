@@ -237,11 +237,23 @@ function handleGeoUpdate($force = false)
 
 function getAuthorizationHeader()
 {
-    // Try Apache-style REDIRECT_ prefix first
+    // Try apache_request_headers first (works without .htaccess)
+    if (function_exists('apache_request_headers')) {
+        $headers = apache_request_headers();
+        if (isset($headers['Authorization'])) {
+            return $headers['Authorization'];
+        }
+        if (isset($headers['authorization'])) {
+            return $headers['authorization'];
+        }
+    }
+
+    // Try Apache-style REDIRECT_ prefix
     if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
         return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
     }
 
+    // Try getallheaders as fallback
     if (function_exists('getallheaders')) {
         $headers = getallheaders();
         if (isset($headers['Authorization'])) {
