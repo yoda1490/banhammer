@@ -249,10 +249,34 @@ function hashEquals($known, $user)
                 <p>No accounts created yet.</p>
             <?php endif; ?>
         </section>
+
+        <section>
+            <h2>Maintenance</h2>
+            <button type="button" onclick="regenStats()">Regenerate Stats</button>
+        </section>
     <?php endif; ?>
 </div>
 <script src="lib/leaflet.js"></script>
 <script>
+    function regenStats() {
+        if (!confirm('This will rebuild stats from all ban records. Continue?')) {
+            return;
+        }
+
+        fetch('get.php?action=stats-full')
+            .then(function(response) {
+                if (response.ok) {
+                    alert('Stats regenerated successfully from all ban records.');
+                    location.reload();
+                } else {
+                    alert('Failed to regenerate stats. HTTP ' + response.status);
+                }
+            })
+            .catch(function(error) {
+                alert('Error: ' + error.message);
+            });
+    }
+
     (function () {
         var mapEl = document.getElementById('mapPicker');
         if (!mapEl) {
