@@ -132,6 +132,7 @@ function hashEquals($known, $user)
 <head>
     <meta charset="UTF-8">
     <title>BanHammer Admin</title>
+    <link rel="stylesheet" href="lib/leaflet.css">
     <style>
         body { font-family: Arial, sans-serif; background:#f5f6fa; margin:0; padding:0; }
         .container { max-width: 960px; margin: 40px auto; background:#fff; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); padding:30px; }
@@ -151,6 +152,8 @@ function hashEquals($known, $user)
         .logout { float:right; }
         .token-options { display:flex; gap:20px; align-items:center; margin-top:10px; }
         .token-options label { font-weight:normal; display:flex; align-items:center; gap:6px; }
+        .map-picker { height: 320px; border:1px solid #ccd1d9; border-radius:4px; margin-top:10px; }
+        .map-hint { font-size:0.9rem; color:#555; margin-top:6px; }
     </style>
 </head>
 <body>
@@ -204,6 +207,9 @@ function hashEquals($known, $user)
                 <label for="longitude">Longitude</label>
                 <input type="number" step="0.000001" id="longitude" name="longitude" min="-180" max="180" required>
 
+                <p class="map-hint">Click the map to place the pin and auto-fill latitude/longitude.</p>
+                <div id="mapPicker" class="map-picker"></div>
+
                 <input type="submit" value="Create Account">
             </form>
 
@@ -245,5 +251,76 @@ function hashEquals($known, $user)
         </section>
     <?php endif; ?>
 </div>
+<script src="lib/leaflet.js"></script>
+<script>
+    (function () {
+        var mapEl = document.getElementById('mapPicker');
+        if (!mapEl) {
+            return;
+        }
+
+        var latInput = document.getElementById('latitude');
+        var lonInput = document.getElementById('longitude');
+        if (!latInput || !lonInput) {
+            return;
+        }
+
+        var map = L.map(mapEl).setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var marker = null;
+
+        function updateMarker(lat, lon) {
+            if (!isFinite(lat) || !isFinite(lon)) {
+                return;
+            }
+            if (!marker) {
+                marker = L.marker([lat, lon], {draggable: true}).addTo(map);
+                marker.on('dragend', function (evt) {
+                    var point = evt.target.getLatLng();
+                    latInput.value = point.lat.toFixed(6);
+                    lonInput.value = point.lng.toFixed(6);
+                });
+            } else {
+                marker.setLatLng([lat, lon]);
+            }
+            map.panTo([lat, lon]);
+        }
+
+        map.on('click', function (evt) {
+            var lat = evt.latlng.lat;
+            var lon = evt.latlng.lng;
+            latInput.value = lat.toFixed(6);
+            lonInput.value = lon.toFixed(6);
+            updateMarker(lat, lon);
+        });
+
+        ['change', 'blur'].forEach(function (eventName) {
+            latInput.addEventListener(eventName, function () {
+                var lat = parseFloat(latInput.value);
+                var lon = parseFloat(lonInput.value);
+                if (isFinite(lat) && isFinite(lon)) {
+                    updateMarker(lat, lon);
+                }
+            });
+            lonInput.addEventListener(eventName, function () {
+                var lat = parseFloat(latInput.value);
+                var lon = parseFloat(lonInput.value);
+                if (isFinite(lat) && isFinite(lon)) {
+                    updateMarker(lat, lon);
+                }
+            });
+        });
+
+        var initialLat = parseFloat(latInput.value);
+        var initialLon = parseFloat(lonInput.value);
+        if (isFinite(initialLat) && isFinite(initialLon)) {
+            updateMarker(initialLat, initialLon);
+        }
+    })();
+</script>
 </body>
 </html>
