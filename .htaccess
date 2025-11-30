@@ -1,0 +1,2 @@
+# CGI/FastCGI fix: Pass Authorization header to PHP
+CGIPassAuth On
