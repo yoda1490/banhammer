@@ -56,6 +56,25 @@ CREATE TABLE `banhammer_stats` (
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `banhammer_accounts`
+-- Stores API bearer tokens mapped to trusted sensors / accounts
+--
+
+CREATE TABLE `banhammer_accounts` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token_hash` CHAR(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SHA-256 hash of bearer token',
+  `latitude` DECIMAL(9,6) DEFAULT NULL,
+  `longitude` DECIMAL(9,6) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_token_hash` (`token_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -39,4 +39,8 @@ if (!isset($webServer)) {
     $webServer = getenv('WEB_SERVER') ?: '*';
 }
 
+if (!isset($adminTokenHash)) {
+    $adminTokenHash = getenv('ADMIN_TOKEN_HASH') ?: '';
+}
+
 ?>

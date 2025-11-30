@@ -59,6 +59,20 @@ The country colors adapt based on actual attack data
 - **jQuery 3.7.1** - DOM manipulation
 - **OpenStreetMap** - Free map tiles
 
+## 🔑 Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_HOST` | Database host for PHP endpoints | `localhost` |
+| `DB_USER` | Database username | `fail2ban` |
+| `DB_PASSWORD` | Database password | `fail2ban` |
+| `DB_NAME` | Database/schema name | `fail2ban` |
+| `DB_TABLE` | Table storing ban records | `fail2ban` |
+| `WEB_SERVER` | Allowed origin for CORS headers | `*` |
+| `ADMIN_TOKEN_HASH` | SHA-256 hash of the admin portal token | *(empty)* |
+
+Set these via `.env`, Docker Compose, or system environment variables. The admin portal requires `ADMIN_TOKEN_HASH`; generate it using the snippet shown in the installation section.
+
 ## 🔧 Requirements
 
 - **Web Server:** Apache with PHP 7.x+
@@ -95,6 +109,20 @@ Copy and edit configuration:
 cp dbinfo.php.example dbinfo.php
 nano dbinfo.php
 ```
+
+Optionally configure environment variables (used by Docker Compose and other tooling):
+```bash
+cp .env.example .env
+nano .env
+```
+
+When editing `.env`, set `ADMIN_TOKEN_HASH` to the SHA-256 hash of your chosen admin token. Generate one securely with:
+```bash
+TOKEN=$(openssl rand -hex 32)
+echo "Admin token: $TOKEN"
+echo -n "$TOKEN" | sha256sum | awk '{print $1}'
+```
+Store the printed hash (second command) in `.env` and keep the raw token secret—you will use it to log in to the admin portal.
 
 Edit with your MySQL credentials:
 ```php
@@ -264,6 +292,69 @@ curl http://localhost/get.php?action=stats-full
 
 All endpoints return JSON.
 
+### POST `/set.php` (Authenticated)
+
+Used by Fail2Ban sensors to push new ban events without direct database access. Requires a bearer token that maps to a record inside `banhammer_accounts`.
+
+**Headers**
+
+- `Authorization: Bearer <your-long-random-token>`
+
+**Body parameters (form or JSON)**
+
+| Field     | Required | Description |
+|-----------|----------|-------------|
+| `ip`      | ✅       | IPv4/IPv6 address to log |
+| `name`    | ⚙️*      | Jail/service name. Defaults to the account name if omitted |
+| `protocol`| ⚙️       | Protocol label (default `tcp`) |
+| `ports`   | ⚙️       | Port or comma-separated list (default `0`) |
+| `ban`     | ⚙️       | `1` (default) or `0` to flag unbans |
+
+`*` optional but recommended. Default values are derived from the authenticated account record when omitted.
+
+**Example:**
+
+```bash
+TOKEN="my-super-secret-token"
+curl -sS -X POST https://ban.boller.co/set.php \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -d "name=sshd" \
+  -d "protocol=tcp" \
+  -d "ports=22" \
+  -d "ip=203.0.113.42"
+```
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "id": 123456,
+  "ip": "203.0.113.42",
+  "name": "sshd",
+  "account_id": 2
+}
+```
+
+**Provisioning tokens**
+
+Tokens are stored hashed (SHA-256) inside the `banhammer_accounts` table along with optional latitude/longitude metadata that is used as a fallback if GeoIP data is unavailable.
+
+```sql
+INSERT INTO banhammer_accounts (name, token_hash, latitude, longitude)
+VALUES ('sensor-paris', SHA2('my-super-secret-token', 256), 48.8566, 2.3522);
+```
+
+Update `fail2sql/banhammer.conf` with the matching bearer token so Fail2Ban automatically posts new bans to `set.php`.
+
+### Admin Portal (`admin.php`)
+
+- Navigate to `https://your-domain/admin.php` (served by the same web host as the dashboard).
+- Log in using the raw admin token whose hash you stored in `ADMIN_TOKEN_HASH`.
+- Create new sensor accounts by providing a label and latitude/longitude. Tokens can be auto-generated (recommended) or manually supplied.
+- After creation, the portal shows the newly generated token exactly once—copy it and configure your sensor/Fail2Ban action with it.
+- Existing accounts are listed with their coordinates and timestamps (token hashes remain hidden for security).
+
 ### GET `/get.php?action=stats`
 Returns aggregated statistics and country-level data.
 
@@ -346,6 +437,13 @@ Retrieves WHOIS information for an IP.
 - `idx_country`, `idx_code`, `idx_code3`, `idx_timestamp`
 - `idx_geo` - For map queries
 - `idx_name` - For jail filtering
+
+**banhammer_accounts table:**
+- `id` - Primary key
+- `name` - Friendly sensor/account label
+- `token_hash` - SHA-256 hash of the bearer token used by that sensor
+- `latitude` / `longitude` - Optional sensor coordinates used as GeoIP fallback
+- `created_at`, `updated_at` - Audit columns
 
 ## 🔐 Security
 
