@@ -231,6 +231,11 @@ function handleGeoUpdate($force = false)
 
 function getAuthorizationHeader()
 {
+    // Try Apache-style REDIRECT_ prefix first
+    if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
+
     if (function_exists('getallheaders')) {
         $headers = getallheaders();
         if (isset($headers['Authorization'])) {
