@@ -100,7 +100,7 @@ function handleBan(array $payload, array $account, $link, $table)
     $longitudeParam = isset($longitude) ? (string)$longitude : null;
     $latitudeParam = isset($latitude) ? (string)$latitude : null;
 
-    $stmt = mysqli_prepare($link, "INSERT INTO `$table` (name, protocol, ports, ip, longitude, latitude, code, code3, city, country, timestamp, ban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)");
+    $stmt = mysqli_prepare($link, "INSERT INTO `$table` (name, protocol, ports, ip, longitude, latitude, code, code3, city, country, timestamp, ban, account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
     if (!$stmt) {
         return [
             'code' => 500,
@@ -110,7 +110,7 @@ function handleBan(array $payload, array $account, $link, $table)
 
     mysqli_stmt_bind_param(
         $stmt,
-        'ssssssssssi',
+        'ssssssssssii',
         $name,
         $protocol,
         $ports,
@@ -121,7 +121,8 @@ function handleBan(array $payload, array $account, $link, $table)
         $countryCode3,
         $city,
         $countryName,
-        $ban
+        $ban,
+        (int)$account['id']
     );
 
     if (!mysqli_stmt_execute($stmt)) {

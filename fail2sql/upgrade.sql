@@ -29,6 +29,11 @@ ALTER TABLE `fail2ban`
   ADD KEY `idx_geo` (`longitude`,`latitude`),
   ADD KEY `idx_name` (`name`(100));
 
+-- 4. Ensure account_id column exists for tracking source account
+ALTER TABLE `fail2ban`
+  ADD COLUMN IF NOT EXISTS `account_id` INT DEFAULT NULL COMMENT 'Source banhammer_accounts id' AFTER `ban`,
+  ADD KEY `idx_account_id` (`account_id`);
+
 
 -- Create banhammer_stats table for caching aggregated statistics
 CREATE TABLE IF NOT EXISTS `banhammer_stats` (
