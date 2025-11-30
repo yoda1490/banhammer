@@ -9,7 +9,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $authHeader = getAuthorizationHeader();
 if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-    respondJson(401, ['error' => 'UNAUTHORIZED', 'message' => 'Missing or invalid bearer token']);
+    // Debug: log available server vars for troubleshooting
+    $debugInfo = [
+        'REDIRECT_HTTP_AUTHORIZATION' => $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? 'not set',
+        'HTTP_AUTHORIZATION' => $_SERVER['HTTP_AUTHORIZATION'] ?? 'not set',
+        'authHeader' => $authHeader ?: 'null'
+    ];
+    respondJson(401, ['error' => 'UNAUTHORIZED', 'message' => 'Missing or invalid bearer token', 'debug' => $debugInfo]);
 }
 
 $token = trim($matches[1]);
