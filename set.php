@@ -9,13 +9,24 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $authHeader = getAuthorizationHeader();
 if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-    // Debug: log available server vars for troubleshooting
-    $debugInfo = [
-        'REDIRECT_HTTP_AUTHORIZATION' => $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? 'not set',
-        'HTTP_AUTHORIZATION' => $_SERVER['HTTP_AUTHORIZATION'] ?? 'not set',
-        'authHeader' => $authHeader ?: 'null'
-    ];
-    respondJson(401, ['error' => 'UNAUTHORIZED', 'message' => 'Missing or invalid bearer token', 'debug' => $debugInfo]);
+    // Debug: dump all server vars to find the header
+    $allServerKeys = array_filter(array_keys($_SERVER), function($key) {
+        return stripos($key, 'auth') !== false || stripos($key, 'http_') === 0;
+    });
+    $serverVars = [];
+    foreach ($allServerKeys as $key) {
+        $serverVars[$key] = $_SERVER[$key];
+    }
+    
+    respondJson(401, [
+        'error' => 'UNAUTHORIZED', 
+        'message' => 'Missing or invalid bearer token', 
+        'debug' => [
+            'authHeader' => $authHeader ?: 'null',
+            'apache_request_headers_exists' => function_exists('apache_request_headers'),
+            'relevant_server_vars' => $serverVars
+        ]
+    ]);
 }
 
 $token = trim($matches[1]);
