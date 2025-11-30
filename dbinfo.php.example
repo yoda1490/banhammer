@@ -43,4 +43,7 @@ if (!isset($adminTokenHash)) {
     $adminTokenHash = getenv('ADMIN_TOKEN_HASH') ?: '';
 }
 
+// Optional: Define admin token hash directly here instead of using environment variables
+// $adminTokenHash = 'your_sha256_hash_here';
+
 ?>

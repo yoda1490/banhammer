@@ -18,15 +18,9 @@ The fastest way to get BanHammer running is with Docker Compose, which automatic
 
 2. **Create `.env` file** (optional, for custom configuration)
    ```bash
-   cat > .env << EOF
-   DB_USER=fail2ban
-   DB_PASSWORD=your_secure_password
-   DB_NAME=fail2ban
-   DB_TABLE=fail2ban
-   MYSQL_ROOT_PASSWORD=root_password
-   WEB_PORT=80
-   WEB_SERVER=*
-   EOF
+   cp .env.example .env
+   nano .env
+   # Fill in your database credentials, web server domain, and admin token hash
    ```
 
 3. **Start the containers**

@@ -24,78 +24,209 @@ if (!$account) {
 }
 
 $payload = getPayload();
+$action = strtolower(trim($_GET['action'] ?? ($payload['action'] ?? 'ban')));
+$result = null;
 
-$ip = isset($payload['ip']) ? filter_var(trim($payload['ip']), FILTER_VALIDATE_IP) : null;
-if (!$ip) {
-    respondJson(422, ['error' => 'INVALID_IP', 'message' => 'Valid IPv4 or IPv6 address is required']);
+switch ($action) {
+    case 'ban':
+        $result = handleBan($payload, $account, $link, $table);
+        break;
+    case 'unban':
+        $result = handleUnban($payload, $link, $table);
+        break;
+    case 'flush':
+        $result = handleFlush($link, $table);
+        break;
+    case 'start':
+        $result = handleGeoUpdate(false);
+        break;
+    case 'stop':
+        $result = handleGeoUpdate(true);
+        break;
+    default:
+        $result = [
+            'code' => 400,
+            'payload' => [
+                'error' => 'INVALID_ACTION',
+                'message' => 'Supported actions: ban, unban, flush, start, stop'
+            ]
+        ];
+        break;
 }
 
-$name = isset($payload['name']) && trim($payload['name']) !== '' ? trim($payload['name']) : $account['name'];
-$protocol = isset($payload['protocol']) && trim($payload['protocol']) !== '' ? trim($payload['protocol']) : 'tcp';
-$rawPorts = $payload['ports'] ?? $payload['port'] ?? '0';
-$ports = trim($rawPorts) !== '' ? trim($rawPorts) : '0';
-$ban = isset($payload['ban']) ? (intval($payload['ban']) ? 1 : 0) : 1;
-
-if (!preg_match('/^[a-z0-9_-]{1,32}$/i', $protocol)) {
-    respondJson(422, ['error' => 'INVALID_PROTOCOL', 'message' => 'Protocol must be alphanumeric (max 32 chars)']);
-}
-if (strlen($name) > 255) {
-    $name = substr($name, 0, 255);
-}
-if (strlen($ports) > 64) {
-    $ports = substr($ports, 0, 64);
+if (isset($link) && $link) {
+    mysqli_close($link);
 }
 
-$geo = geolocateIp($ip);
-$longitude = $geo && isset($geo->longitude) ? $geo->longitude : $account['longitude'];
-$latitude = $geo && isset($geo->latitude) ? $geo->latitude : $account['latitude'];
-$countryCode = $geo && isset($geo->country_code) ? $geo->country_code : '';
-$countryCode3 = $geo && isset($geo->country_code3) ? $geo->country_code3 : '';
-$city = $geo && isset($geo->city) ? $geo->city : '';
-$countryName = $geo && isset($geo->country_name) ? $geo->country_name : '';
+respondJson($result['code'], $result['payload']);
 
-$longitudeParam = isset($longitude) ? (string)$longitude : null;
-$latitudeParam = isset($latitude) ? (string)$latitude : null;
+function handleBan(array $payload, array $account, $link, $table)
+{
+    $ip = isset($payload['ip']) ? filter_var(trim($payload['ip']), FILTER_VALIDATE_IP) : null;
+    if (!$ip) {
+        return [
+            'code' => 422,
+            'payload' => ['error' => 'INVALID_IP', 'message' => 'Valid IPv4 or IPv6 address is required']
+        ];
+    }
 
-$stmt = mysqli_prepare($link, "INSERT INTO `$table` (name, protocol, ports, ip, longitude, latitude, code, code3, city, country, timestamp, ban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)");
-if (!$stmt) {
-    respondJson(500, ['error' => 'DB_PREPARE_FAILED', 'message' => mysqli_error($link)]);
-}
+    $name = isset($payload['name']) && trim($payload['name']) !== '' ? trim($payload['name']) : $account['name'];
+    $protocol = isset($payload['protocol']) && trim($payload['protocol']) !== '' ? trim($payload['protocol']) : 'tcp';
+    $rawPorts = $payload['ports'] ?? $payload['port'] ?? '0';
+    $ports = trim($rawPorts) !== '' ? trim($rawPorts) : '0';
+    $ban = isset($payload['ban']) ? (intval($payload['ban']) ? 1 : 0) : 1;
 
-mysqli_stmt_bind_param(
-    $stmt,
-    'ssssssssssi',
-    $name,
-    $protocol,
-    $ports,
-    $ip,
-    $longitudeParam,
-    $latitudeParam,
-    $countryCode,
-    $countryCode3,
-    $city,
-    $countryName,
-    $ban
-);
+    if (!preg_match('/^[a-z0-9_-]{1,32}$/i', $protocol)) {
+        return [
+            'code' => 422,
+            'payload' => ['error' => 'INVALID_PROTOCOL', 'message' => 'Protocol must be alphanumeric (max 32 chars)']
+        ];
+    }
+    if (strlen($name) > 255) {
+        $name = substr($name, 0, 255);
+    }
+    if (strlen($ports) > 64) {
+        $ports = substr($ports, 0, 64);
+    }
 
-if (!mysqli_stmt_execute($stmt)) {
-    $error = mysqli_stmt_error($stmt);
+    $geo = geolocateIp($ip);
+    $longitude = $geo && isset($geo->longitude) ? $geo->longitude : $account['longitude'];
+    $latitude = $geo && isset($geo->latitude) ? $geo->latitude : $account['latitude'];
+    $countryCode = $geo && isset($geo->country_code) ? $geo->country_code : '';
+    $countryCode3 = $geo && isset($geo->country_code3) ? $geo->country_code3 : '';
+    $city = $geo && isset($geo->city) ? $geo->city : '';
+    $countryName = $geo && isset($geo->country_name) ? $geo->country_name : '';
+
+    $longitudeParam = isset($longitude) ? (string)$longitude : null;
+    $latitudeParam = isset($latitude) ? (string)$latitude : null;
+
+    $stmt = mysqli_prepare($link, "INSERT INTO `$table` (name, protocol, ports, ip, longitude, latitude, code, code3, city, country, timestamp, ban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)");
+    if (!$stmt) {
+        return [
+            'code' => 500,
+            'payload' => ['error' => 'DB_PREPARE_FAILED', 'message' => mysqli_error($link)]
+        ];
+    }
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        'ssssssssssi',
+        $name,
+        $protocol,
+        $ports,
+        $ip,
+        $longitudeParam,
+        $latitudeParam,
+        $countryCode,
+        $countryCode3,
+        $city,
+        $countryName,
+        $ban
+    );
+
+    if (!mysqli_stmt_execute($stmt)) {
+        $error = mysqli_stmt_error($stmt);
+        mysqli_stmt_close($stmt);
+        return [
+            'code' => 500,
+            'payload' => ['error' => 'DB_INSERT_FAILED', 'message' => $error]
+        ];
+    }
+
+    $insertId = mysqli_insert_id($link);
     mysqli_stmt_close($stmt);
-    respondJson(500, ['error' => 'DB_INSERT_FAILED', 'message' => $error]);
+
+    return [
+        'code' => 201,
+        'payload' => [
+            'status' => 'ok',
+            'id' => $insertId,
+            'ip' => $ip,
+            'name' => $name,
+            'account_id' => (int)$account['id']
+        ]
+    ];
 }
 
-$insertId = mysqli_insert_id($link);
-mysqli_stmt_close($stmt);
+function handleUnban(array $payload, $link, $table)
+{
+    $ip = isset($payload['ip']) ? filter_var(trim($payload['ip']), FILTER_VALIDATE_IP) : null;
+    if (!$ip) {
+        return [
+            'code' => 422,
+            'payload' => ['error' => 'INVALID_IP', 'message' => 'IP is required for unban action']
+        ];
+    }
 
-mysqli_close($link);
+    $name = isset($payload['name']) ? trim($payload['name']) : '';
+    $sql = "UPDATE `$table` SET ban=0 WHERE ip=?";
+    $types = 's';
+    $params = [$ip];
 
-respondJson(201, [
-    'status' => 'ok',
-    'id' => $insertId,
-    'ip' => $ip,
-    'name' => $name,
-    'account_id' => (int)$account['id']
-]);
+    if ($name !== '') {
+        $sql .= ' AND name=?';
+        $types .= 's';
+        $params[] = $name;
+    }
+
+    $stmt = mysqli_prepare($link, $sql);
+    if (!$stmt) {
+        return [
+            'code' => 500,
+            'payload' => ['error' => 'DB_PREPARE_FAILED', 'message' => mysqli_error($link)]
+        ];
+    }
+
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    if (!mysqli_stmt_execute($stmt)) {
+        $error = mysqli_stmt_error($stmt);
+        mysqli_stmt_close($stmt);
+        return [
+            'code' => 500,
+            'payload' => ['error' => 'DB_UPDATE_FAILED', 'message' => $error]
+        ];
+    }
+
+    $updated = mysqli_stmt_affected_rows($stmt);
+    mysqli_stmt_close($stmt);
+
+    return [
+        'code' => 200,
+        'payload' => ['status' => 'ok', 'updated' => $updated]
+    ];
+}
+
+function handleFlush($link, $table)
+{
+    $query = "UPDATE `$table` SET ban=0";
+    if (!mysqli_query($link, $query)) {
+        return [
+            'code' => 500,
+            'payload' => ['error' => 'DB_UPDATE_FAILED', 'message' => mysqli_error($link)]
+        ];
+    }
+
+    return [
+        'code' => 200,
+        'payload' => ['status' => 'ok', 'updated' => mysqli_affected_rows($link)]
+    ];
+}
+
+function handleGeoUpdate($force = false)
+{
+    try {
+        $result = updateGeoDb($force);
+        return [
+            'code' => 200,
+            'payload' => ['status' => 'ok'] + $result
+        ];
+    } catch (RuntimeException $e) {
+        return [
+            'code' => 500,
+            'payload' => ['error' => 'GEOIP_UPDATE_FAILED', 'message' => $e->getMessage()]
+        ];
+    }
+}
 
 function getAuthorizationHeader()
 {
@@ -171,6 +302,32 @@ function geolocateIp($ip)
     geoip_close($db);
 
     return $record ?: null;
+}
+
+function updateGeoDb($force = false)
+{
+    $geoCityFile = __DIR__ . '/fail2sql/GeoLiteCity.dat';
+    $geoIpUrl = getenv('GEOIP_URL') ?: 'https://dl.miyuru.lk/geoip/dbip/city/dbip4.dat.gz';
+
+    if (!$force && file_exists($geoCityFile) && (time() - filemtime($geoCityFile) < 86400)) {
+        return ['status' => 'skipped', 'message' => 'GeoIP database already up to date', 'path' => $geoCityFile];
+    }
+
+    $gzData = @file_get_contents($geoIpUrl);
+    if ($gzData === false) {
+        throw new RuntimeException('Unable to download GeoIP database from ' . $geoIpUrl);
+    }
+
+    $decoded = @gzdecode($gzData);
+    if ($decoded === false) {
+        throw new RuntimeException('Failed to decode GeoIP database payload');
+    }
+
+    if (@file_put_contents($geoCityFile, $decoded) === false) {
+        throw new RuntimeException('Unable to write GeoIP database to ' . $geoCityFile);
+    }
+
+    return ['status' => 'updated', 'message' => 'GeoIP database refreshed', 'path' => $geoCityFile];
 }
 
 function respondJson($statusCode, array $payload)

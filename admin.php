@@ -2,9 +2,9 @@
 session_start();
 require_once __DIR__ . '/dbinfo.php';
 
-$adminTokenHash = trim(getenv('ADMIN_TOKEN_HASH') ?: '');
+$adminTokenHash = trim($adminTokenHash ?? getenv('ADMIN_TOKEN_HASH') ?: '');
 if ($adminTokenHash === '') {
-    die('ADMIN_TOKEN_HASH is not configured. Set it in your environment or .env file.');
+    die('ADMIN_TOKEN_HASH is not configured. Set it in dbinfo.php, .env, or environment.');
 }
 
 $errors = [];
